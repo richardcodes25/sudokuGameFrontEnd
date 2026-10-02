@@ -32,78 +32,17 @@ export class NavBarComponent {
   }
 
   ngOnInit() {
-    //Called after the constructor, initializing input properties, and the first call to ngOnChanges.
-    //Add 'implements OnInit' to the class.
     console.clear();
-    this.shareService.solveSignal.subscribe(signal => {
-      this.signalSolve = signal;
-      if (this.signalSolve) {
-        let solveButton = document.getElementById("solve");
-        // console.log(solveButton);
-        if (solveButton != null) {
-          solveButton.style.borderBottom = '5px solid lime';
-        }
-      }
-    });
-
-    this.shareService.playSignal.subscribe(signal => {
-      this.signalPlay = signal;
-      if (this.signalPlay) {
-        let playButton = document.getElementById("play");
-        // console.log(playButton);
-        if (playButton != null) {
-          playButton.style.borderBottom = '5px solid lime';
-        }
-      }
-    });
   }
 
   sendTingleSolve() {
     this.shareService.changeSolveSignal(true);
     this.shareService.changePlaySignal(false);
-
-    this.shareService.solveSignal.subscribe(signal => {
-      this.signalSolve = signal;
-      if (this.signalSolve) {
-        let solveButton = document.getElementById("solve");
-        let playButton = document.getElementById("play");
-        let aboutButton = document.getElementById("about");
-
-        console.log(solveButton);
-        if (solveButton != null) {
-          solveButton.style.borderBottom = '5px solid lime';
-        }
-        console.log(playButton);
-        if (playButton != null && aboutButton!= null) {
-          playButton.style.borderBottom = 'none';
-          aboutButton.style.borderBottom = 'none';
-        }
-      }
-    });
   }
 
   sendTinglePlay() {
     this.shareService.changeSolveSignal(false);
     this.shareService.changePlaySignal(true);
-
-    this.shareService.playSignal.subscribe(signal => {
-      this.signalPlay = signal;
-      if (this.signalPlay) {
-        let playButton = document.getElementById("play");
-        let solveButton = document.getElementById("solve");
-        let aboutButton = document.getElementById("about");
-
-        console.log(playButton);
-        if (playButton != null) {
-          playButton.style.borderBottom = '5px solid lime';
-        }
-        console.log(solveButton);
-        if (solveButton != null && aboutButton!= null) {
-          solveButton.style.borderBottom = 'none';
-          aboutButton.style.borderBottom = 'none';
-        }
-      }
-    });
   }
 
   sendTingleAbout() {

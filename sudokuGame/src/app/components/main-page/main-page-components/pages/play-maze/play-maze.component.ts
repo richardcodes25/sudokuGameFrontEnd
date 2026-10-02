@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, HostListener, QueryList, ViewChildren } from '@angular/core';
 import Swal from 'sweetalert2';
 import { MazeSquare } from './MazeSquare';
 import { ShareService } from 'src/app/share.service';
@@ -20,7 +20,11 @@ class Coordinate {
 })
 
 export class PlayMazeComponent {
+  @ViewChildren('cellInput') cellInputs!: QueryList<ElementRef<HTMLInputElement>>;
+
   mazeList : MazeSquare[][];
+  selectedRow = -1;
+  selectedCol = -1;
 
   soluong:number = 9;
   x: String[] = [];
@@ -31,6 +35,19 @@ export class PlayMazeComponent {
 
   time: string = "00:00:00";
   stopTime: boolean = true;
+  screen: 'menu' | 'play' = 'menu';
+  playMode: 'friend' | 'computer' = 'friend';
+  dialog: 'none' | 'account' | 'signin' | 'setup' = 'none';
+  difficulty: 'easy' | 'medium' | 'hard' = 'medium';
+  timerMode: 'stopwatch' | 'countdown' = 'stopwatch';
+  countdownMinutes = 15;
+  countdownChoices = [10, 15, 30, 45];
+  countdownTotal = 15 * 60;
+  remaining = 15 * 60;
+  timeUp = false;
+  signedIn = false;
+  signInEmail = '';
+  signInPassword = '';
   second: string = "0";
   minute: string = "0";
   hour: string = "0";
@@ -53,9 +70,219 @@ export class PlayMazeComponent {
     this.shareService.maze = [];
   }
 
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  displayValue(cell: MazeSquare): string {
+    const value = cell?.value;
+    if (value === '' || value == null || value === 0 || value === '0') {
+      return '';
+    }
+    return String(value);
+  }
+
+  isRelated(row: number, col: number): boolean {
+    if (this.selectedRow < 0 || this.selectedCol < 0) {
+      return false;
+    }
+    if (row === this.selectedRow && col === this.selectedCol) {
+      return false;
+    }
+    if (row === this.selectedRow || col === this.selectedCol) {
+      return true;
+    }
+    return Math.floor(row / 3) === Math.floor(this.selectedRow / 3)
+      && Math.floor(col / 3) === Math.floor(this.selectedCol / 3);
+  }
+
+  onCellFocus(event: FocusEvent, row: number, col: number): void {
+    this.selectedRow = row;
+    this.selectedCol = col;
+    (event.target as HTMLInputElement).select();
+  }
+
+  onCellBlur(event: FocusEvent): void {
+    const next = event.relatedTarget as HTMLElement | null;
+    if (!next || !next.classList.contains('cell')) {
+      this.selectedRow = -1;
+      this.selectedCol = -1;
+    }
+  }
+
+  onCellKeydown(event: KeyboardEvent, row: number, col: number): void {
+    const key = event.key;
+    if (this.mazeList[row][col].isDisable) {
+      if (key.startsWith('Arrow')) {
+        event.preventDefault();
+        this.moveFocus(row, col, key);
+      } else if (key.length === 1 && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (key === 'Backspace' || key === 'Delete') {
+      event.preventDefault();
+      this.commitCell(event.target as HTMLInputElement, row, col, '');
+      return;
+    }
+    if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+      event.preventDefault();
+      this.moveFocus(row, col, key);
+      return;
+    }
+    if (/^[1-9]$/.test(key)) {
+      event.preventDefault();
+      this.commitCell(event.target as HTMLInputElement, row, col, key);
+      return;
+    }
+    if (key.length === 1 && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+    }
+  }
+
+  onCellBeforeInput(event: Event, row: number, col: number): void {
+    const inputEvent = event as InputEvent;
+    if (this.mazeList[row][col].isDisable) {
+      inputEvent.preventDefault();
+      return;
+    }
+    const input = inputEvent.target as HTMLInputElement;
+    if (inputEvent.inputType?.startsWith('delete')) {
+      inputEvent.preventDefault();
+      this.commitCell(input, row, col, '');
+      return;
+    }
+    if (inputEvent.inputType === 'insertText' || inputEvent.inputType === 'insertCompositionText') {
+      inputEvent.preventDefault();
+      const digit = inputEvent.data ?? '';
+      if (/^[1-9]$/.test(digit)) {
+        this.commitCell(input, row, col, digit);
+      }
+    }
+  }
+
+  onCellPaste(event: ClipboardEvent, row: number, col: number): void {
+    event.preventDefault();
+    if (this.mazeList[row][col].isDisable) {
+      return;
+    }
+    const digit = (event.clipboardData?.getData('text') ?? '').trim().charAt(0);
+    if (/^[1-9]$/.test(digit)) {
+      this.commitCell(event.target as HTMLInputElement, row, col, digit);
+    }
+  }
+
+  private commitCell(input: HTMLInputElement, row: number, col: number, value: string): void {
+    this.mazeList[row][col].value = value;
+    if (input) {
+      input.value = value;
+    }
+  }
+
+  private moveFocus(row: number, col: number, key: string): void {
+    let nextRow = row;
+    let nextCol = col;
+    if (key === 'ArrowLeft') nextCol = Math.max(0, col - 1);
+    if (key === 'ArrowRight') nextCol = Math.min(8, col + 1);
+    if (key === 'ArrowUp') nextRow = Math.max(0, row - 1);
+    if (key === 'ArrowDown') nextRow = Math.min(8, row + 1);
+    this.cellInputs?.get(nextRow * 9 + nextCol)?.nativeElement.focus();
+  }
+
+  chooseFriend(): void {
+    this.playMode = 'friend';
+    this.timerMode = 'stopwatch';
+    this.dialog = 'none';
+    this.screen = 'play';
+    this.resetClock();
+  }
+
+  chooseComputer(): void {
+    this.playMode = 'computer';
+    this.dialog = 'account';
+  }
+
+  continueAsGuest(): void {
+    this.signedIn = false;
+    this.dialog = 'setup';
+  }
+
+  openSignIn(): void {
+    this.dialog = 'signin';
+  }
+
+  submitSignIn(): void {
+    if (!this.signInEmail.trim() || !this.signInPassword) {
+      return;
+    }
+    this.signedIn = true;
+    this.signInPassword = '';
+    this.dialog = 'setup';
+  }
+
+  selectDifficulty(level: 'easy' | 'medium' | 'hard'): void {
+    this.difficulty = level;
+  }
+
+  selectTimerMode(mode: 'stopwatch' | 'countdown'): void {
+    this.timerMode = mode;
+  }
+
+  selectCountdown(minutes: number): void {
+    this.countdownMinutes = minutes;
+    this.countdownTotal = minutes * 60;
+  }
+
+  startComputerGame(): void {
+    this.playMode = 'computer';
+    this.countdownTotal = this.countdownMinutes * 60;
+    this.dialog = 'none';
+    this.screen = 'play';
+    this.resetClock();
+    this.fillMatrix();
+  }
+
+  backToMenu(): void {
+    this.stopTime = true;
+    this.dialog = 'none';
+    this.screen = 'menu';
+    this.gameStarted = false;
+  }
+
+  closeDialog(): void {
+    this.dialog = 'none';
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.dialog !== 'none') {
+      this.closeDialog();
+    }
+  }
+
   //-------------------------------------------------------------------
   //Timer
   timerCycle():void {
+    if (this.stopTime) {
+      return;
+    }
+    if (this.timerMode === 'countdown') {
+      setTimeout(() => {
+        if (this.stopTime) {
+          return;
+        }
+        this.remaining = Math.max(0, this.remaining - 1);
+        this.writeClock(this.remaining);
+        if (this.remaining === 0) {
+          this.finishCountdown();
+          return;
+        }
+        this.timerCycle();
+      }, 1000);
+      return;
+    }
     if (this.stopTime == false) {
       this.sec = parseInt(this.second);
       this.min = parseInt(this.minute);
@@ -94,6 +321,70 @@ export class PlayMazeComponent {
     }
   }
 
+  private writeClock(totalSeconds: number): void {
+    const safe = Math.max(0, totalSeconds);
+    const hr = Math.floor(safe / 3600);
+    const min = Math.floor((safe % 3600) / 60);
+    const sec = safe % 60;
+    this.hr = hr;
+    this.min = min;
+    this.sec = sec;
+    this.hour = hr < 10 ? '0' + hr : String(hr);
+    this.minute = min < 10 ? '0' + min : String(min);
+    this.second = sec < 10 ? '0' + sec : String(sec);
+    this.time = this.hour + ':' + this.minute + ':' + this.second;
+  }
+
+  private resetClock(): void {
+    this.stopTime = true;
+    this.timeUp = false;
+    if (this.timerMode === 'countdown') {
+      this.remaining = this.countdownTotal;
+      this.writeClock(this.remaining);
+      return;
+    }
+    this.sec = 0;
+    this.min = 0;
+    this.hr = 0;
+    this.second = '0';
+    this.minute = '0';
+    this.hour = '0';
+    this.time = '00:00:00';
+  }
+
+  private finishCountdown(): void {
+    this.stopTime = true;
+    this.timeUp = true;
+    this.checkButtonDisable = true;
+    this.writeClock(0);
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        this.mazeList[i][j].isDisable = true;
+      }
+    }
+    Swal.fire({
+      icon: 'warning',
+      title: 'Time is up',
+      text: 'The countdown reached zero.',
+      confirmButtonColor: '#148F10',
+      allowOutsideClick: true,
+      allowEscapeKey: true
+    });
+  }
+
+  private clueTarget(): number {
+    if (this.playMode !== 'computer') {
+      return 36;
+    }
+    if (this.difficulty === 'easy') {
+      return 46;
+    }
+    if (this.difficulty === 'hard') {
+      return 28;
+    }
+    return 36;
+  }
+
   //--------------------------------------------------------------------
   //Start-Pause-Continue
   startGame() {
@@ -125,6 +416,9 @@ export class PlayMazeComponent {
   }
 
   continueGame() {
+    if (this.timeUp) {
+      return;
+    }
     this.gameStarted = true;
     this.checkButtonDisable = false;
     if (this.stopTime == true) {
@@ -132,6 +426,12 @@ export class PlayMazeComponent {
       this.timerCycle();
     } else {
       this.stopTime = true;
+    }
+
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        this.mazeList[i][j].isDisable = this.mazeList[i][j].isClue;
+      }
     }
   }
 
@@ -142,27 +442,22 @@ export class PlayMazeComponent {
     this.isSolve = false;
     console.log(this.mazeList);
 
-    //Reset the clock
-    this.time= "00:00:00";
     this.gameStarted = false;
-    this.stopTime = true;
-    this.sec = 0;
-    this.min = 0;
-    this.hr = 0;
-    this.second = "0";
-    this.minute = "0";
-    this.hour = "0";
+    this.resetClock();
 
     for (let i = 0; i < 9; i++) {
       for (let j = 0; j< 9;j++) {
         this.mazeList[i][j].value = "";
         this.mazeList[i][j].isDisable = true;
+        this.mazeList[i][j].isClue = false;
       }
     }
 
-    for (let i = 0; i < 9; i++) {
-      for (let j = 0; j< 9;j++) {
-        this.solution[i][j] = 0;
+    if (this.solution.length === 9) {
+      for (let i = 0; i < 9; i++) {
+        for (let j = 0; j< 9;j++) {
+          this.solution[i][j] = 0;
+        }
       }
     }
     console.clear();
@@ -178,9 +473,11 @@ export class PlayMazeComponent {
         if (this.chuot_bach_array[i][j] == 0) {
           this.mazeList[i][j].value = "";
           this.mazeList[i][j].isDisable = false;
+          this.mazeList[i][j].isClue = false;
         } else {
           this.mazeList[i][j].value = this.chuot_bach_array[i][j];
           this.mazeList[i][j].isDisable = true;
+          this.mazeList[i][j].isClue = true;
         }
       }
     }
@@ -249,7 +546,9 @@ export class PlayMazeComponent {
         icon: 'error',
         title: 'Please try again, I believe you can do it <span>&#9996;</span>',
         showConfirmButton: true,
-        timer: 2506
+        timer: 2506,
+        allowOutsideClick: true,
+        allowEscapeKey: true
       })
     } else {
       this.isSolve = true;
@@ -263,7 +562,9 @@ export class PlayMazeComponent {
         icon: 'success',
         title: alertMessage,
         showConfirmButton: true,
-        timer: 25060
+        timer: 25060,
+        allowOutsideClick: true,
+        allowEscapeKey: true
       })
     }
   }
@@ -493,7 +794,7 @@ export class PlayMazeComponent {
     console.log(nonEmptySquares.pop())
     let rounds = 3;
     let i = 0;
-    while (rounds > 0 && nonEmptySquaresCount >= 17) {
+    while (rounds > 0 && nonEmptySquaresCount > this.clueTarget()) {
       const x = nonEmptySquaresCount != 0 ? nonEmptySquares[i] : new Coordinate(0,0);
       console.log(x.row + " " + x.column);
       nonEmptySquaresCount--;

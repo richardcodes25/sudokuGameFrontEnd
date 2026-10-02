@@ -1,136 +1,99 @@
-@import url('https://fonts.googleapis.com/css2?family=Edu+SA+Beginner:wght@600&family=Roboto&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+@import '../../../../../sudoku-board';
 
-/* For WebKit (Chrome, Safari) => prevent stepper in <input> box */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+:host {
+  display: block;
 }
-
-// As you remove the space you cannot put <mat-hint>hint</mat-hint> or <mat-error>error</mat-error> properly. Error and hint get inside the form-field.
-// mat-form-field {
-//   margin-bottom: -1.25em;
-// }
 
 .solve-page {
   display: flex;
   flex-wrap: wrap;
-  margin: 1.5% 5%;
-
-  gap: 5%;
-}
-
-#maze {
-  width: 50%;
-}
-
-.grid-container {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10% 10%;
-  gap: 1%;
-}
-
-.grid-form {
-  width: 100%;
-}
-
-.grid-item {
-  width: 100%;
-  border-radius: 8px;
-  border: 2px solid #148F10;
-  background-color: #98DB9C;
-  border-collapse: collapse;
-  padding: 0;
-  font-size: 25px;
-  text-align: center;
-}
-
-//----------------------------------------------------------------------------------
-//Button Place
-.button-holder {
-  width: 100%;
-  height: 20%;
-  padding: 0;
-  gap: 10px;
-
-  display: flex;
   justify-content: center;
-  align-items: center;
-}
-
-.button-holder button {
-  border: 2px solid orange;
-  color: orange;
-  background-color: #8F4A17;
-  font-family: 'Roboto', sans-serif;
-  font-weight: lighter;
-}
-
-.button-holder button:hover {
-  border: 3px solid lime;
-  color: lime;
-  font-weight: 500;
-  background-color: #5C44DB;
-}
-
-.solveButton {
+  align-items: flex-start;
+  gap: 40px;
+  box-sizing: border-box;
   margin: 0;
+  padding: 36px 24px 64px;
 }
 
-.mat-hint {
-  display: none;
-}
-
-//-----------------------------------------------------------------
-//Direction
 .direction {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-
-  width: 45%;
+  gap: 22px;
+  width: min(100%, 420px);
+  box-sizing: border-box;
+  padding: 28px 24px;
+  border: 1px solid rgba(20, 143, 16, 0.45);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #142416 0%, #0d160e 100%);
 }
 
 .direction > h3 {
-  color: white;
+  margin: 0;
+  color: #d8ffb0;
   font-family: 'Roboto', sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.45;
 }
 
-.example-full-width {
-  height: 60px;
+.button-holder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
   padding: 0;
 }
 
-.input-area {
-  background-color: white;
+.button-holder button {
+  margin: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(50, 205, 50, 0.55);
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: #d8ffb0;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+}
+
+.button-holder button:hover:not(:disabled) {
+  border-color: lime;
+  background: #148f10;
+  color: #f3ffe8;
+}
+
+.button-holder button:disabled {
+  opacity: 0.38;
 }
 
 #notifiCation {
-  // color: blue;
-  // background-color: #8F4A17;
   font-family: 'Roboto', sans-serif;
-  font-weight: lighter;
 }
 
-//----------------------------------------------------------------------------------------------
-//Responsive design
+.note {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.note-ok {
+  color: #b7e2b1;
+}
+
+.note-bad {
+  color: #f0a3a3;
+}
+
 @media screen and (max-width: 798px) {
   .solve-page {
     flex-direction: column;
-    justify-content: center;
-  }
-
-  #maze {
-    width: 100%;
+    align-items: center;
+    padding: 24px 16px 48px;
   }
 
   .direction {
-    width: 100%;
-    justify-content: center;
+    width: min(100%, 540px);
   }
 }
-
-
-

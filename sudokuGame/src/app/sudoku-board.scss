@@ -1,0 +1,120 @@
+.board-panel {
+  position: relative;
+  width: min(100%, 540px);
+  flex: 0 0 auto;
+}
+
+.board-panel::before {
+  content: "";
+  position: absolute;
+  inset: -48px -36px;
+  background: radial-gradient(circle at 50% 42%, rgba(20, 143, 16, 0.28), transparent 68%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.board {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  grid-template-rows: repeat(9, minmax(0, 1fr));
+  background: #d9f5c8;
+  border: 3px solid #0f5c22;
+  border-radius: 8px;
+  box-shadow:
+    0 24px 50px rgba(0, 0, 0, 0.38),
+    0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.cell {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border: 0;
+  border-right: 1px solid #8ed07a;
+  border-bottom: 1px solid #8ed07a;
+  background: #d9f5c8;
+  color: #146b32;
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: clamp(16px, calc(100cqi / 20), 30px);
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  caret-color: #146b32;
+  outline: none;
+  appearance: none;
+  border-radius: 0;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+
+.cell:nth-child(9n) {
+  border-right-color: transparent;
+}
+
+.cell:nth-last-child(-n + 9) {
+  border-bottom-color: transparent;
+}
+
+.cell.block-right {
+  border-right: 2px solid #0f5c22;
+}
+
+.cell.block-bottom {
+  border-bottom: 2px solid #0f5c22;
+}
+
+.cell.related {
+  background: #c3eead;
+}
+
+.cell.clue {
+  color: #0e3b14;
+  -webkit-text-fill-color: #0e3b14;
+  font-weight: 700;
+  background: #b7e89a;
+  cursor: default;
+}
+
+.cell.clue.related {
+  background: #a6dc88;
+}
+
+.cell.locked {
+  color: #0e3b14;
+  -webkit-text-fill-color: #0e3b14;
+  font-weight: 700;
+  cursor: default;
+}
+
+.cell:not([readonly]):hover {
+  background: #e7ffd8;
+}
+
+.cell.selected,
+.cell:focus {
+  background: #c6ff6b;
+  box-shadow: inset 0 0 0 2px #148f10;
+  position: relative;
+  z-index: 1;
+}
+
+.cell.clue.selected,
+.cell.clue:focus,
+.cell.locked:focus {
+  background: #c6ff6b;
+}
+
+.cell::selection {
+  background: rgba(20, 143, 16, 0.28);
+}

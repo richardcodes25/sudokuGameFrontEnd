@@ -58,6 +58,17 @@ a {
   margin: auto;
 }
 
+#play,
+#solve {
+  box-sizing: border-box;
+  border-bottom: 5px solid transparent;
+}
+
+#play.active,
+#solve.active {
+  border-bottom-color: lime;
+}
+
 // ul li:not(:first-child, :last-child):active {
 //   border-bottom: 5px solid lime;
 // }

@@ -6,9 +6,9 @@
         <p class="game-title">Sudoku</p>
       </div>
     </li>
-    <li id="play"><a routerLink="playMaze" (click)="sendTinglePlay()">Play with new Maze</a></li>
-    <li id="solve"><a routerLink="solveMaze" routerLinkActive="active" (click)="sendTingleSolve()">Solve Your Maze</a></li>
-    <li id="about"><a routerLink="aboutme" (click)="sendTingleAbout()">About me</a></li>
+    <li id="play" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="playMaze" (click)="sendTinglePlay()">Play</a></li>
+    <li id="solve" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="solveMaze" (click)="sendTingleSolve()">Solve</a></li>
+    <!-- <li id="about"><a routerLink="aboutme" (click)="sendTingleAbout()">About me</a></li> -->
 
     <li class="icon"><a href="javascript:void(0);" onclick="myFunction()"><mat-icon>list</mat-icon></a></li>
   </ul>

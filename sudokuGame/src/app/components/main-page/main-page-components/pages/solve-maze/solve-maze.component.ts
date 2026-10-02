@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ElementRef, QueryList, ViewChildren } from '@angular/core';
 import { ShareService } from 'src/app/share.service';
 import Swal from 'sweetalert2';
 
@@ -9,7 +9,11 @@ import Swal from 'sweetalert2';
 })
 
 export class SolveMazeComponent {
+  @ViewChildren('cellInput') cellInputs!: QueryList<ElementRef<HTMLInputElement>>;
+
   mazeList : any[][];
+  selectedRow = -1;
+  selectedCol = -1;
   soluong:number = 9;
   isDisabled: boolean = false;
   // input: string = "________4,1____9_7_,__37_28__,____7_26_,4_______8,_91_6____,__42_36__,_3_14___9,9________";
@@ -51,6 +55,126 @@ export class SolveMazeComponent {
     } else {
       console.error("Maze data is not available yet.");
     }
+  }
+
+  trackByIndex(index: number): number {
+    return index;
+  }
+
+  displayValue(value: any): string {
+    if (value === '' || value == null || value === 0 || value === '0') {
+      return '';
+    }
+    return String(value);
+  }
+
+  isRelated(row: number, col: number): boolean {
+    if (this.selectedRow < 0 || this.selectedCol < 0) {
+      return false;
+    }
+    if (row === this.selectedRow && col === this.selectedCol) {
+      return false;
+    }
+    if (row === this.selectedRow || col === this.selectedCol) {
+      return true;
+    }
+    return Math.floor(row / 3) === Math.floor(this.selectedRow / 3)
+      && Math.floor(col / 3) === Math.floor(this.selectedCol / 3);
+  }
+
+  onCellFocus(event: FocusEvent, row: number, col: number): void {
+    this.selectedRow = row;
+    this.selectedCol = col;
+    (event.target as HTMLInputElement).select();
+  }
+
+  onCellBlur(event: FocusEvent): void {
+    const next = event.relatedTarget as HTMLElement | null;
+    if (!next || !next.classList.contains('cell')) {
+      this.selectedRow = -1;
+      this.selectedCol = -1;
+    }
+  }
+
+  onCellKeydown(event: KeyboardEvent, row: number, col: number): void {
+    const key = event.key;
+    if (this.isDisabled) {
+      if (key.startsWith('Arrow')) {
+        event.preventDefault();
+        this.moveFocus(row, col, key);
+      } else if (key.length === 1 && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (key === 'Backspace' || key === 'Delete') {
+      event.preventDefault();
+      this.commitCell(event.target as HTMLInputElement, row, col, '');
+      return;
+    }
+    if (key === 'ArrowUp' || key === 'ArrowDown' || key === 'ArrowLeft' || key === 'ArrowRight') {
+      event.preventDefault();
+      this.moveFocus(row, col, key);
+      return;
+    }
+    if (/^[1-9]$/.test(key)) {
+      event.preventDefault();
+      this.commitCell(event.target as HTMLInputElement, row, col, key);
+      return;
+    }
+    if (key.length === 1 && !event.ctrlKey && !event.metaKey) {
+      event.preventDefault();
+    }
+  }
+
+  onCellBeforeInput(event: Event, row: number, col: number): void {
+    const inputEvent = event as InputEvent;
+    if (this.isDisabled) {
+      inputEvent.preventDefault();
+      return;
+    }
+    const input = inputEvent.target as HTMLInputElement;
+    if (inputEvent.inputType?.startsWith('delete')) {
+      inputEvent.preventDefault();
+      this.commitCell(input, row, col, '');
+      return;
+    }
+    if (inputEvent.inputType === 'insertText' || inputEvent.inputType === 'insertCompositionText') {
+      inputEvent.preventDefault();
+      const digit = inputEvent.data ?? '';
+      if (/^[1-9]$/.test(digit)) {
+        this.commitCell(input, row, col, digit);
+      }
+    }
+  }
+
+  onCellPaste(event: ClipboardEvent, row: number, col: number): void {
+    event.preventDefault();
+    if (this.isDisabled) {
+      return;
+    }
+    const digit = (event.clipboardData?.getData('text') ?? '').trim().charAt(0);
+    if (/^[1-9]$/.test(digit)) {
+      this.commitCell(event.target as HTMLInputElement, row, col, digit);
+    }
+  }
+
+  private commitCell(input: HTMLInputElement, row: number, col: number, value: string): void {
+    this.mazeList[row][col] = value;
+    if (input) {
+      input.value = value;
+    }
+  }
+
+  private moveFocus(row: number, col: number, key: string): void {
+    let nextRow = row;
+    let nextCol = col;
+    if (key === 'ArrowLeft') nextCol = Math.max(0, col - 1);
+    if (key === 'ArrowRight') nextCol = Math.min(8, col + 1);
+    if (key === 'ArrowUp') nextRow = Math.max(0, row - 1);
+    if (key === 'ArrowDown') nextRow = Math.min(8, row + 1);
+    this.cellInputs?.get(nextRow * 9 + nextCol)?.nativeElement.focus();
   }
 
   fillMatrix() {
@@ -109,7 +233,9 @@ export class SolveMazeComponent {
         icon: 'success',
         title: 'We finish it!!',
         showConfirmButton: true,
-        timer: 25060
+        timer: 25060,
+        allowOutsideClick: true,
+        allowEscapeKey: true
       })
       this.isSolve = true;
       this.canBesolve = true;

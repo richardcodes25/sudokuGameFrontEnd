@@ -1,157 +1,295 @@
-@import url('https://fonts.googleapis.com/css2?family=Edu+SA+Beginner:wght@600&family=Roboto&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap'); //font for clock (stop watch)
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap');
+@import '../../../../../sudoku-board';
 
-/* For WebKit (Chrome, Safari) => prevent stepper in <input> box */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
+:host {
+  display: block;
 }
 
 .play-page {
   display: flex;
   flex-wrap: wrap;
-  margin: 1.5% 5%;
-
-  gap: 5%;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 40px;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 36px 24px 64px;
 }
 
-#maze {
-  width: 50%;
-}
-
-.grid-container {
-  width: 100%;
-  display: grid;
-  grid-template-columns: 10% 10% 10% 10% 10% 10% 10% 10% 10%;
-  gap: 1%;
-}
-
-.grid-form {
-  width: 100%;
-}
-
-.grid-item {
-  width: 100%;
-  border-radius: 8px;
-  border: 2px solid #148F10;
-  background-color: #98DB9C;
-  border-collapse: collapse;
-  padding: 0;
-  font-size: 25px;
-  text-align: center;
-}
-
-//----------------------------------------------------------------------------------
-//Button Place
 .direction {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-
-  width: 45%;
-}
-
-//Timer -----------------------------
-.stop-watch {
-  gap: 10px;
-}
-
-#timer {
-  font-size: 45px;
-  line-height: 60px;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 300;
-  color: lime;
+  gap: 28px;
+  width: min(100%, 420px);
+  box-sizing: border-box;
+  padding: 28px 24px;
+  border: 1px solid rgba(20, 143, 16, 0.45);
+  border-radius: 20px;
+  background: linear-gradient(180deg, #142416 0%, #0d160e 100%);
 }
 
 .stop-watch h3 {
+  margin: 0 0 8px;
+  font-family: 'Roboto', sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: #9dcea0;
+}
+
+#timer {
+  margin: 0;
   font-family: 'Orbitron', sans-serif;
-  font-weight: 300;
+  font-size: 42px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: 0.04em;
   color: lime;
 }
 
-//-------------------------------------------
+#timer.time-up {
+  color: #ffb4b4;
+}
+
+.player-note {
+  margin: 8px 0 0;
+  color: #9dcea0;
+  font-family: 'Roboto', sans-serif;
+  font-size: 14px;
+}
 
 .button-holder {
-  width: 100%;
-  height: 20%;
-  padding: 0;
-
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  padding: 0;
 }
 
 .button-holder button {
-  border: 2px solid orange;
-  color: orange;
-  background-color: #8F4A17;
+  margin: 0;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(50, 205, 50, 0.55);
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: #d8ffb0;
   font-family: 'Roboto', sans-serif;
-  font-weight: lighter;
+  font-weight: 400;
+  letter-spacing: 0.01em;
 }
 
-.button-holder button:hover {
-  border: 3px solid lime;
-  color: lime;
-  font-weight: 500;
-  background-color: #5C44DB;
+.button-holder button:hover:not(:disabled) {
+  border-color: lime;
+  background: #148f10;
+  color: #f3ffe8;
 }
 
-.solveButton {
-  margin: 0 10px;
-  // height: ;
-  // font-weight: bold;
+.button-holder button:disabled {
+  opacity: 0.38;
 }
 
-.mat-hint {
-  display: none;
-}
-
-.direction > h2 {
-  margin-bottom: 0;
-  font-family: 'Roboto', sans-serif;
-}
-
-.guidance {
-  color: white;
-}
-
-.example-full-width {
-  height: 60px;
-  padding: 0;
-}
-
-.input-area {
-  background-color: white;
-}
-
-//----------------------------------------------------------------------------------------------
-//Responsive design
-// @media screen and (max-width: 1200px) {
-//   .solveButton {
-//     height: max-content;
-//   }
-// }
 @media screen and (max-width: 798px) {
   .play-page {
     flex-direction: column;
-    justify-content: center;
-  }
-
-  #maze {
-    width: 100%;
+    align-items: center;
+    padding: 24px 16px 48px;
   }
 
   .direction {
-    width: 100%;
-    flex-direction: column;
-    justify-content: center;
+    width: min(100%, 540px);
   }
 
-  // .solveButton {
-  //   width: max-content;
-  // }
+  .mode-card {
+    width: min(100%, 460px);
+  }
 }
 
+.mode-menu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  box-sizing: border-box;
+  padding: 48px 24px 64px;
+}
+
+.mode-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 14px;
+  width: min(100%, 440px);
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 36px;
+  border: 5px solid #148f10;
+  border-radius: 20px;
+  background:
+    radial-gradient(circle at 50% 30%, rgba(50, 205, 50, 0.22), transparent 55%),
+    #10210f;
+  color: lime;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'Roboto', sans-serif;
+}
+
+.mode-card:hover {
+  background: #148f10;
+  color: #041406;
+}
+
+.mode-title {
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.mode-copy {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.dialog {
+  width: min(100%, 520px);
+  max-height: min(90vh, 760px);
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 28px 24px;
+  border: 2px solid #148f10;
+  border-radius: 18px;
+  background: #101910;
+  color: #e7ffe4;
+  font-family: 'Roboto', sans-serif;
+}
+
+.dialog h2 {
+  margin: 0 0 8px;
+  color: lime;
+  font-size: 26px;
+  font-weight: 500;
+}
+
+.dialog-lead {
+  margin: 0 0 22px;
+  color: #d7f5cf;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.dialog-label {
+  margin: 18px 0 8px;
+  color: #9dcea0;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.dialog-actions,
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dialog-actions {
+  margin-top: 22px;
+}
+
+.dialog-button,
+.choice,
+.timer-option {
+  border: 1px solid rgba(50, 205, 50, 0.55);
+  border-radius: 12px;
+  background: transparent;
+  color: #d8ffb0;
+  font-family: 'Roboto', sans-serif;
+  cursor: pointer;
+}
+
+.dialog-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+}
+
+.dialog-button-solid,
+.choice.selected,
+.timer-option.selected {
+  border-color: lime;
+  background: #148f10;
+  color: #f3ffe8;
+}
+
+.dialog-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.choice {
+  min-height: 40px;
+  padding: 0 14px;
+}
+
+.timer-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timer-option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  text-align: left;
+}
+
+.timer-name {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.timer-sub {
+  color: #c5e8bc;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.timer-option.selected .timer-sub {
+  color: #f3ffe8;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  color: #9dcea0;
+  font-size: 13px;
+}
+
+.field input {
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid #1f8a2a;
+  border-radius: 10px;
+  background: #0c160d;
+  color: #e7ffe4;
+  font-size: 15px;
+}

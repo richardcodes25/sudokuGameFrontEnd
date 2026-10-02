@@ -4,17 +4,42 @@
 
 <!-- <h2>Input your maze here and click Solve button to solve your quiz!</h2> -->
 <div class="solve-page">
-  <div id="maze">
-    <div class="grid-container" *ngFor="let row of mazeList; let i = index">
-      <form class="grid-form" *ngFor="let element of row; let j = index">
-        <input matInput type="number" max="9" min="1" class="grid-item" [(ngModel)]="mazeList[i][j]" [ngModelOptions]="{standalone:true}" [disabled]="isDisabled">
-        <!-- <mat-hint>E</mat-hint> -->
-      </form>
+  <div class="board-panel">
+    <div class="board" role="grid" aria-label="Sudoku board">
+      <ng-container *ngFor="let row of mazeList; trackBy: trackByIndex; let i = index">
+        <input
+          #cellInput
+          *ngFor="let cell of row; trackBy: trackByIndex; let j = index"
+          class="cell"
+          [class.locked]="isDisabled"
+          [class.selected]="selectedRow === i && selectedCol === j"
+          [class.related]="isRelated(i, j)"
+          [class.block-right]="j % 3 === 2 && j !== 8"
+          [class.block-bottom]="i % 3 === 2 && i !== 8"
+          type="text"
+          inputmode="numeric"
+          maxlength="1"
+          autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
+          role="gridcell"
+          [attr.name]="'solve-' + i + '-' + j"
+          [attr.aria-label]="'Row ' + (i + 1) + ', column ' + (j + 1)"
+          [attr.tabindex]="isDisabled ? -1 : 0"
+          [value]="displayValue(cell)"
+          [readonly]="isDisabled"
+          (keydown)="onCellKeydown($event, i, j)"
+          (beforeinput)="onCellBeforeInput($event, i, j)"
+          (paste)="onCellPaste($event, i, j)"
+          (focus)="onCellFocus($event, i, j)"
+          (blur)="onCellBlur($event)"
+        />
+      </ng-container>
     </div>
   </div>
 
   <div class="direction">
-    <h3>Input your maze here, and click on Solve button to solve your message</h3>
+    <h3>Enter the numbers you already know, then solve the rest of the puzzle.</h3>
     <div class="button-holder">
       <button mat-raised-button color="primary" (click)="solveMaze()" class="solveButton">
         <span>Solve</span>
@@ -37,9 +62,8 @@
     </mat-form-field> -->
 
     <div id="notifiCation">
-      <p *ngIf="isSolve && canBesolve" style="color: lime;">The Maze is solved successfully</p>
-      <p *ngIf="!isSolve && !canBesolve" style="color: red;">We can not solve this maze</p>
-      <p *ngIf="!isSolve && canBesolve" style="color: orange;">If you can not finish it, we can help you</p>
+      <p class="note note-ok" *ngIf="isSolve && canBesolve">The maze is solved.</p>
+      <p class="note note-bad" *ngIf="!isSolve && !canBesolve">This maze cannot be solved.</p>
     </div>
   </div>
 

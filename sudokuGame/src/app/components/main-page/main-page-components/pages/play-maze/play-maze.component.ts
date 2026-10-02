@@ -2,6 +2,7 @@ import { Component, ElementRef, HostListener, QueryList, ViewChildren } from '@a
 import Swal from 'sweetalert2';
 import { MazeSquare } from './MazeSquare';
 import { ShareService } from 'src/app/share.service';
+import { Difficulty, GameRoom, RoomService } from 'src/app/room.service';
 
 class Coordinate {
   row: number;
@@ -35,10 +36,27 @@ export class PlayMazeComponent {
 
   time: string = "00:00:00";
   stopTime: boolean = true;
-  screen: 'menu' | 'play' = 'menu';
+  screen: 'menu' | 'lobby' | 'play' = 'menu';
   playMode: 'friend' | 'computer' = 'friend';
-  dialog: 'none' | 'account' | 'signin' | 'setup' = 'none';
-  difficulty: 'easy' | 'medium' | 'hard' = 'medium';
+  pendingMode: 'friend' | 'computer' = 'computer';
+  dialog: 'none' | 'account' | 'signin' | 'setup' | 'create-room' | 'room-ready' = 'none';
+  difficulty: Difficulty = 'medium';
+  readonly maxLives = 3;
+  lives = 3;
+  lifeSlots = [0, 1, 2];
+  outOfLives = false;
+  publicRooms: GameRoom[] = [];
+  currentRoom: GameRoom | null = null;
+  roomName = '';
+  roomIsPublic = true;
+  roomRequireBoth = false;
+  roomDifficulty: Difficulty = 'medium';
+  privateJoinCode = '';
+  privateRoomName = '';
+  privateJoinError = '';
+  roomCode = '';
+  roomCodeError = '';
+  idCopied = false;
   timerMode: 'stopwatch' | 'countdown' = 'stopwatch';
   countdownMinutes = 15;
   countdownChoices = [10, 15, 30, 45];
@@ -57,7 +75,7 @@ export class PlayMazeComponent {
 
   checkButtonDisable: boolean= false;
 
-  constructor(private shareService: ShareService) {
+  constructor(private shareService: ShareService, private roomService: RoomService) {
     this.mazeList = [];
     for (let i=0;i<9;i++) {
       this.mazeList[i] = [];
@@ -175,10 +193,93 @@ export class PlayMazeComponent {
   }
 
   private commitCell(input: HTMLInputElement, row: number, col: number, value: string): void {
+    if (this.outOfLives && value !== '') {
+      if (input) {
+        input.value = this.displayValue(this.mazeList[row][col]);
+      }
+      return;
+    }
+    const previous = this.displayValue(this.mazeList[row][col]);
+    if (value === previous) {
+      if (input) {
+        input.value = previous;
+      }
+      return;
+    }
     this.mazeList[row][col].value = value;
     if (input) {
       input.value = value;
     }
+    if (!value || !this.gameStarted) {
+      this.mazeList[row][col].isWrong = false;
+      return;
+    }
+    const invalid = this.isInvalidEntry(row, col, value);
+    this.mazeList[row][col].isWrong = invalid;
+    if (invalid) {
+      this.loseLife();
+    }
+  }
+
+  private isInvalidEntry(row: number, col: number, value: string): boolean {
+    const digit = Number(value);
+    if (!digit) {
+      return false;
+    }
+    const answer = this.solution.length === 9 ? Number(this.solution[row][col]) : 0;
+    if (answer) {
+      return digit !== answer;
+    }
+    for (let c = 0; c < 9; c++) {
+      if (c !== col && Number(this.mazeList[row][c].value) === digit) {
+        return true;
+      }
+    }
+    for (let r = 0; r < 9; r++) {
+      if (r !== row && Number(this.mazeList[r][col].value) === digit) {
+        return true;
+      }
+    }
+    const startRow = row - (row % 3);
+    const startCol = col - (col % 3);
+    for (let r = 0; r < 3; r++) {
+      for (let c = 0; c < 3; c++) {
+        if (startRow + r === row && startCol + c === col) {
+          continue;
+        }
+        if (Number(this.mazeList[startRow + r][startCol + c].value) === digit) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private loseLife(): void {
+    if (this.outOfLives || this.lives <= 0) {
+      return;
+    }
+    this.lives -= 1;
+    if (this.lives > 0) {
+      return;
+    }
+    this.lives = 0;
+    this.outOfLives = true;
+    this.stopTime = true;
+    this.checkButtonDisable = true;
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        this.mazeList[i][j].isDisable = true;
+      }
+    }
+    Swal.fire({
+      icon: 'warning',
+      title: 'No lives left',
+      text: 'That number was not correct, and you have used all 3 lives.',
+      confirmButtonColor: '#148F10',
+      allowOutsideClick: true,
+      allowEscapeKey: true
+    });
   }
 
   private moveFocus(row: number, col: number, key: string): void {
@@ -192,21 +293,20 @@ export class PlayMazeComponent {
   }
 
   chooseFriend(): void {
+    this.pendingMode = 'friend';
     this.playMode = 'friend';
-    this.timerMode = 'stopwatch';
-    this.dialog = 'none';
-    this.screen = 'play';
-    this.resetClock();
+    this.dialog = 'account';
   }
 
   chooseComputer(): void {
+    this.pendingMode = 'computer';
     this.playMode = 'computer';
     this.dialog = 'account';
   }
 
   continueAsGuest(): void {
     this.signedIn = false;
-    this.dialog = 'setup';
+    this.afterAccount();
   }
 
   openSignIn(): void {
@@ -219,7 +319,154 @@ export class PlayMazeComponent {
     }
     this.signedIn = true;
     this.signInPassword = '';
+    this.afterAccount();
+  }
+
+  private afterAccount(): void {
+    if (this.pendingMode === 'friend') {
+      this.playMode = 'friend';
+      this.dialog = 'none';
+      this.screen = 'lobby';
+      this.privateJoinError = '';
+      this.refreshRooms();
+      return;
+    }
     this.dialog = 'setup';
+  }
+
+  playerName(): string {
+    if (this.signedIn && this.signInEmail.trim()) {
+      return this.signInEmail.trim();
+    }
+    return 'Guest';
+  }
+
+  difficultyLabel(level: Difficulty): string {
+    if (level === 'easy') return 'Easy';
+    if (level === 'hard') return 'Hard';
+    return 'Medium';
+  }
+
+  roomNameError(): string {
+    const name = this.roomName.trim();
+    if (!name) {
+      return 'Enter a room name.';
+    }
+    if (name.length > 25) {
+      return 'Room names cannot be more than 25 characters.';
+    }
+    if (!/^[A-Za-z0-9 ]+$/.test(name)) {
+      return 'Room names cannot include special characters.';
+    }
+    if (this.roomService.nameTaken(name)) {
+      return 'A room with this name already exists.';
+    }
+    return '';
+  }
+
+  openCreateRoom(): void {
+    this.roomName = '';
+    this.roomIsPublic = true;
+    this.roomRequireBoth = false;
+    this.roomDifficulty = 'medium';
+    this.dialog = 'create-room';
+  }
+
+  createRoom(): void {
+    if (this.roomNameError()) {
+      return;
+    }
+    const room = this.roomService.create(this.roomName, this.roomIsPublic, this.roomDifficulty, this.playerName(), this.roomRequireBoth);
+    this.currentRoom = room;
+    this.idCopied = false;
+    this.dialog = 'room-ready';
+  }
+
+  startHostedGame(): void {
+    if (!this.currentRoom) {
+      return;
+    }
+    const latest = this.roomService.getRoom(this.currentRoom.id) ?? this.currentRoom;
+    this.enterRoom(latest);
+  }
+
+  cancelCreatedRoom(): void {
+    this.dialog = 'none';
+    this.leaveRoom();
+  }
+
+  copyRoomId(): void {
+    const code = this.currentRoom?.code;
+    if (!code || !navigator.clipboard?.writeText) {
+      return;
+    }
+    navigator.clipboard.writeText(code).then(() => {
+      this.idCopied = true;
+    });
+  }
+
+  joinByRoomId(): void {
+    const result = this.roomService.joinByCode(this.roomCode, this.playerName());
+    this.roomCodeError = result.error;
+    if (result.room) {
+      this.roomCode = '';
+      this.enterRoom(result.room);
+    }
+  }
+
+  joinRoom(room: GameRoom): void {
+    const error = this.roomService.join(room.id, this.playerName());
+    if (error) {
+      this.privateJoinError = error;
+      this.refreshRooms();
+      return;
+    }
+    const joined = this.roomService.getRoom(room.id);
+    if (joined) {
+      this.enterRoom(joined);
+    }
+  }
+
+  joinPrivateRoom(): void {
+    const result = this.roomService.joinPrivate(this.privateJoinCode, this.privateRoomName, this.playerName());
+    this.privateJoinError = result.error;
+    if (result.room) {
+      this.privateJoinCode = '';
+      this.privateRoomName = '';
+      this.enterRoom(result.room);
+    }
+  }
+
+  leaveRoom(): void {
+    this.stopTime = true;
+    if (this.currentRoom) {
+      this.roomService.leave(this.currentRoom.id, this.playerName());
+      this.currentRoom = null;
+    }
+    this.gameStarted = false;
+    this.screen = 'lobby';
+    this.refreshRooms();
+  }
+
+  backToLobby(): void {
+    this.screen = 'lobby';
+    this.refreshRooms();
+  }
+
+  private refreshRooms(): void {
+    this.publicRooms = this.roomService.listPublic();
+  }
+
+  private enterRoom(room: GameRoom): void {
+    this.currentRoom = room;
+    this.playMode = 'friend';
+    this.difficulty = room.difficulty;
+    this.timerMode = 'stopwatch';
+    this.dialog = 'none';
+    this.screen = 'play';
+    this.privateJoinError = '';
+    this.resetClock();
+    this.fillMatrix();
   }
 
   selectDifficulty(level: 'easy' | 'medium' | 'hard'): void {
@@ -252,12 +499,15 @@ export class PlayMazeComponent {
   }
 
   closeDialog(): void {
+    if (this.dialog === 'room-ready') {
+      return;
+    }
     this.dialog = 'none';
   }
 
   @HostListener('document:keydown.escape')
   onEscape(): void {
-    if (this.dialog !== 'none') {
+    if (this.dialog !== 'none' && this.dialog !== 'room-ready') {
       this.closeDialog();
     }
   }
@@ -373,9 +623,6 @@ export class PlayMazeComponent {
   }
 
   private clueTarget(): number {
-    if (this.playMode !== 'computer') {
-      return 36;
-    }
     if (this.difficulty === 'easy') {
       return 46;
     }
@@ -416,7 +663,7 @@ export class PlayMazeComponent {
   }
 
   continueGame() {
-    if (this.timeUp) {
+    if (this.timeUp || this.outOfLives) {
       return;
     }
     this.gameStarted = true;
@@ -444,12 +691,15 @@ export class PlayMazeComponent {
 
     this.gameStarted = false;
     this.resetClock();
+    this.lives = this.maxLives;
+    this.outOfLives = false;
 
     for (let i = 0; i < 9; i++) {
       for (let j = 0; j< 9;j++) {
         this.mazeList[i][j].value = "";
         this.mazeList[i][j].isDisable = true;
         this.mazeList[i][j].isClue = false;
+        this.mazeList[i][j].isWrong = false;
       }
     }
 
@@ -467,9 +717,12 @@ export class PlayMazeComponent {
   //To fill the maze into the matrix
   fillMatrix() {
     this.mazeReady = true;
+    this.lives = this.maxLives;
+    this.outOfLives = false;
     this.generatePuzzle();
     for (let i = 0; i < 9; i++) {
       for (let j = 0; j< 9;j++) {
+        this.mazeList[i][j].isWrong = false;
         if (this.chuot_bach_array[i][j] == 0) {
           this.mazeList[i][j].value = "";
           this.mazeList[i][j].isDisable = false;

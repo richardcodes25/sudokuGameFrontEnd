@@ -1,6 +1,7 @@
-import { Component, ElementRef, QueryList, ViewChildren } from '@angular/core';
+import { Component, ElementRef, NgZone, QueryList, ViewChildren } from '@angular/core';
 import { ShareService } from 'src/app/share.service';
 import Swal from 'sweetalert2';
+import { SudokuScanService } from './sudoku-scan.service';
 
 @Component({
   selector: 'app-solve-maze',
@@ -20,8 +21,16 @@ export class SolveMazeComponent {
   // x: String[] = [];
   canBesolve: boolean = true;
   isSolve: boolean = false;
+  scanning = false;
+  scanMessage = '';
+  scanTone: 'info' | 'ok' | 'bad' = 'info';
+  given: boolean[][] = [];
 
-  constructor(private shareService: ShareService) {
+  constructor(
+    private shareService: ShareService,
+    private scanService: SudokuScanService,
+    private zone: NgZone,
+  ) {
     this.mazeList = [];
     this.shareService.maze = [
       [0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -45,6 +54,7 @@ export class SolveMazeComponent {
     for (let i = 0; i < numRows; i++) {
       this.mazeList[i] = Array(elementsInEachRow).fill(""); // Replace 0 with the default value you want for each element
     }
+    this.given = this.emptyGiven();
 
     // console.log(this.mazeList);
   }
@@ -59,6 +69,10 @@ export class SolveMazeComponent {
 
   trackByIndex(index: number): number {
     return index;
+  }
+
+  isGiven(row: number, col: number): boolean {
+    return !!this.given[row]?.[col];
   }
 
   displayValue(value: any): string {
@@ -197,9 +211,80 @@ export class SolveMazeComponent {
     }
   }
 
+  onScanSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.scanning) {
+      return;
+    }
+    void this.readPuzzle(file);
+  }
+
+  private async readPuzzle(file: File): Promise<void> {
+    this.scanning = true;
+    this.isDisabled = true;
+    this.isSolve = false;
+    this.canBesolve = true;
+    this.scanTone = 'info';
+    this.scanMessage = 'Preparing the photo…';
+    try {
+      const grid = await this.scanService.scan(file, (progress) => {
+        this.zone.run(() => {
+          if (progress.phase === 'locate') {
+            this.scanMessage = 'Finding the puzzle…';
+          } else if (progress.phase === 'prepare' || progress.total === 0) {
+            this.scanMessage = 'Preparing the photo…';
+          } else {
+            this.scanMessage = `Reading digits ${progress.done} of ${progress.total}…`;
+          }
+        });
+      });
+      this.zone.run(() => this.applyScannedGrid(grid));
+    } catch {
+      this.zone.run(() => {
+        this.scanTone = 'bad';
+        this.scanMessage = 'The photo could not be read. Use a clear photo of the puzzle.';
+        this.isDisabled = false;
+      });
+    } finally {
+      this.zone.run(() => {
+        this.scanning = false;
+      });
+    }
+  }
+
+  private applyScannedGrid(grid: string[][]): void {
+    let found = 0;
+    for (let row = 0; row < 9; row++) {
+      this.mazeList[row] = [];
+      for (let col = 0; col < 9; col++) {
+        const digit = grid[row][col];
+        this.mazeList[row][col] = digit;
+        if (digit) {
+          found++;
+        }
+      }
+    }
+    this.given = this.emptyGiven();
+    this.isDisabled = false;
+    this.isSolve = false;
+    this.canBesolve = true;
+    if (found === 0) {
+      this.scanTone = 'bad';
+      this.scanMessage = 'No digits were found. Fill the frame with the board and try again.';
+      return;
+    }
+    this.scanTone = 'ok';
+    this.scanMessage = `Filled ${found} cells. Correct any mistakes, then press Solve.`;
+  }
+
   clearMaze() {
     this.canBesolve = true;
     this.isSolve = false;
+    this.scanMessage = '';
+    this.scanTone = 'info';
+    this.given = this.emptyGiven();
 
     this.mazeList = [];
     // Define specific number of elements in each row
@@ -227,8 +312,11 @@ export class SolveMazeComponent {
   count: number = 0;
 
   solveMaze() {
+    this.scanMessage = '';
+    const clues = this.captureGivens();
     console.log(this.mazeList);
     if (this.solve(this.mazeList, 0 ,0)) {
+      this.given = clues;
       Swal.fire({
         icon: 'success',
         title: 'We finish it!!',
@@ -291,5 +379,13 @@ export class SolveMazeComponent {
     }
 
     return true;
+  }
+
+  private emptyGiven(): boolean[][] {
+    return Array.from({ length: 9 }, () => Array<boolean>(9).fill(false));
+  }
+
+  private captureGivens(): boolean[][] {
+    return this.mazeList.map((row) => row.map((cell) => this.displayValue(cell) !== ''));
   }
 }

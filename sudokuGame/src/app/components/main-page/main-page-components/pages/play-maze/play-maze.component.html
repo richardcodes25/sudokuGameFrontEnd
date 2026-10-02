@@ -2,7 +2,7 @@
 <div class="mode-menu" *ngIf="screen === 'menu'">
   <button type="button" class="mode-card" (click)="chooseFriend()">
     <span class="mode-title">Play with friend</span>
-    <span class="mode-copy">Share one board and solve a puzzle together.</span>
+    <span class="mode-copy">Create or join a room and play together.</span>
   </button>
   <button type="button" class="mode-card" (click)="chooseComputer()">
     <span class="mode-title">Play with Computer</span>
@@ -13,8 +13,9 @@
 <div class="dialog-backdrop" *ngIf="dialog !== 'none'" (click)="closeDialog()">
   <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="play-dialog-title" (click)="$event.stopPropagation()">
     <ng-container *ngIf="dialog === 'account'">
-      <h2 id="play-dialog-title">Play with Computer</h2>
+      <h2 id="play-dialog-title">{{ pendingMode === 'friend' ? 'Play with friend' : 'Play with Computer' }}</h2>
       <p class="dialog-lead">Sign in to keep track your score.</p>
+      <p class="dialog-note" *ngIf="pendingMode === 'friend'">You can continue as a guest and join a room. Points from the room will not be saved for guests.</p>
       <div class="dialog-actions">
         <button type="button" class="dialog-button" (click)="continueAsGuest()">Continue as Guest</button>
         <button type="button" class="dialog-button dialog-button-solid" (click)="openSignIn()">Sign in</button>
@@ -73,6 +74,116 @@
         <button type="button" class="dialog-button dialog-button-solid" (click)="startComputerGame()">Start game</button>
       </div>
     </ng-container>
+
+    <ng-container *ngIf="dialog === 'create-room'">
+      <h2 id="play-dialog-title">Create a room</h2>
+      <label class="field">
+        <span>Room name</span>
+        <input type="text" name="room-name" maxlength="25" autocomplete="off" [(ngModel)]="roomName" />
+      </label>
+      <p class="field-error" *ngIf="roomName && roomNameError()">{{ roomNameError() }}</p>
+      <p class="dialog-label">Who can join</p>
+      <div class="choice-row">
+        <button type="button" class="choice" [class.selected]="roomIsPublic" (click)="roomIsPublic = true">Public</button>
+        <button type="button" class="choice" [class.selected]="!roomIsPublic" (click)="roomIsPublic = false">Private</button>
+      </div>
+      <p class="dialog-label">Join rule</p>
+      <button type="button" class="choice lock-choice" [class.selected]="roomRequireBoth" [attr.aria-pressed]="roomRequireBoth" (click)="roomRequireBoth = !roomRequireBoth">
+        Require both room name and room ID to join
+      </button>
+      <p class="dialog-note">{{ roomRequireBoth ? 'Others must enter both the room name and the room ID.' : 'Others can join with the room ID or the room name.' }}</p>
+      <p class="dialog-label">Level of difficulty</p>
+      <div class="choice-row">
+        <button type="button" class="choice" [class.selected]="roomDifficulty === 'easy'" (click)="roomDifficulty = 'easy'">Easy</button>
+        <button type="button" class="choice" [class.selected]="roomDifficulty === 'medium'" (click)="roomDifficulty = 'medium'">Medium</button>
+        <button type="button" class="choice" [class.selected]="roomDifficulty === 'hard'" (click)="roomDifficulty = 'hard'">Hard</button>
+      </div>
+      <div class="dialog-actions">
+        <button type="button" class="dialog-button" (click)="closeDialog()">Back</button>
+        <button type="button" class="dialog-button dialog-button-solid" [disabled]="!!roomNameError()" (click)="createRoom()">Create room</button>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="dialog === 'room-ready' && currentRoom">
+      <h2 id="play-dialog-title">{{ currentRoom.name }}</h2>
+      <p class="dialog-lead">Share this room ID so others can join. The game starts when you press Start.</p>
+      <p class="dialog-label">Room ID</p>
+      <p class="room-id">{{ currentRoom.code }}</p>
+      <div class="dialog-actions room-id-actions">
+        <button type="button" class="dialog-button" (click)="copyRoomId()">{{ idCopied ? 'Copied' : 'Copy room ID' }}</button>
+      </div>
+      <ul class="room-details">
+        <li>{{ currentRoom.isPublic ? 'Public' : 'Private' }}</li>
+        <li>{{ currentRoom.requireBoth ? 'Join with room name and room ID' : 'Join with room ID or room name' }}</li>
+        <li>{{ difficultyLabel(currentRoom.difficulty) }}</li>
+        <li>{{ currentRoom.players.length }} / {{ currentRoom.maxPlayers }} players</li>
+        <li>{{ currentRoom.players.join(', ') }}</li>
+      </ul>
+      <p class="dialog-note">{{ currentRoom.requireBoth ? 'Share both the room name and this ID. You can wait here for your team.' : 'Others can join with this ID, or with the room name. You can wait here for your team.' }}</p>
+      <div class="dialog-actions">
+        <button type="button" class="dialog-button" (click)="cancelCreatedRoom()">Cancel</button>
+        <button type="button" class="dialog-button dialog-button-solid" (click)="startHostedGame()">Start</button>
+      </div>
+    </ng-container>
+  </div>
+</div>
+
+<div class="lobby" *ngIf="screen === 'lobby'">
+  <div class="lobby-card">
+    <h2>Play with friend</h2>
+    <p class="dialog-note">{{ signedIn ? 'Signed in as ' + signInEmail : 'Playing as guest. Points from this room will not be saved.' }}</p>
+    <div class="dialog-actions">
+      <button type="button" class="dialog-button dialog-button-solid" (click)="openCreateRoom()">Create room</button>
+      <button type="button" class="dialog-button" (click)="backToMenu()">Back</button>
+    </div>
+
+    <h3>Public rooms</h3>
+    <table class="room-table" *ngIf="publicRooms.length">
+      <thead>
+        <tr>
+          <th>Room</th>
+          <th>ID</th>
+          <th>Difficulty</th>
+          <th>Players</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let room of publicRooms">
+          <td>{{ room.name }}</td>
+          <td>{{ room.code }}</td>
+          <td>{{ difficultyLabel(room.difficulty) }}</td>
+          <td>{{ room.players.length }} / {{ room.maxPlayers }}</td>
+          <td>
+            <button type="button" class="dialog-button" [disabled]="room.players.length >= room.maxPlayers" (click)="joinRoom(room)">Join</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="dialog-note" *ngIf="!publicRooms.length">No public rooms are open.</p>
+
+    <h3>Join with a room ID</h3>
+    <label class="field">
+      <span>Room ID</span>
+      <input type="text" name="room-id" inputmode="numeric" maxlength="6" autocomplete="off" [(ngModel)]="roomCode" />
+    </label>
+    <p class="field-error" *ngIf="roomCodeError">{{ roomCodeError }}</p>
+    <button type="button" class="dialog-button dialog-button-solid" [disabled]="!roomCode.trim()" (click)="joinByRoomId()">Join with ID</button>
+
+    <h3>Join a private room</h3>
+    <p class="dialog-note">If the host required both, enter the room ID and the room name. Otherwise either one is enough.</p>
+    <div class="field-row">
+      <label class="field">
+        <span>Room ID</span>
+        <input type="text" name="private-room-id" inputmode="numeric" maxlength="6" autocomplete="off" [(ngModel)]="privateJoinCode" />
+      </label>
+      <label class="field">
+        <span>Room name</span>
+        <input type="text" name="private-room-name" maxlength="25" autocomplete="off" [(ngModel)]="privateRoomName" />
+      </label>
+    </div>
+    <p class="field-error" *ngIf="privateJoinError">{{ privateJoinError }}</p>
+    <button type="button" class="dialog-button dialog-button-solid" [disabled]="!privateJoinCode.trim() && !privateRoomName.trim()" (click)="joinPrivateRoom()">Join private room</button>
   </div>
 </div>
 
@@ -85,6 +196,7 @@
           *ngFor="let cell of row; trackBy: trackByIndex; let j = index"
           class="cell"
           [class.clue]="cell.isClue"
+          [class.wrong]="cell.isWrong"
           [class.selected]="selectedRow === i && selectedCol === j"
           [class.related]="isRelated(i, j)"
           [class.block-right]="j % 3 === 2 && j !== 8"
@@ -115,7 +227,11 @@
     <div class="stop-watch">
       <h3>{{ timerMode === 'countdown' ? 'Time remaining' : 'Your current Solving time is:' }}</h3>
       <p id="timer" [class.time-up]="timeUp">{{ time }}</p>
-      <p class="player-note" *ngIf="playMode === 'computer'">{{ signedIn ? 'Signed in as ' + signInEmail : 'Playing as guest' }}</p>
+      <p class="lives" [attr.aria-label]="lives === 1 ? '1 life left' : lives + ' lives left'">
+        <span *ngFor="let slot of lifeSlots" class="heart" [class.lost]="slot >= lives">&#x2665;</span>
+      </p>
+      <p class="player-note" *ngIf="currentRoom">{{ currentRoom.name }} · ID {{ currentRoom.code }} · {{ currentRoom.players.length }} / {{ currentRoom.maxPlayers }}</p>
+      <p class="player-note" *ngIf="playMode === 'computer' || currentRoom">{{ signedIn ? 'Signed in as ' + signInEmail : 'Playing as guest' }}</p>
     </div>
 
     <div class="button-holder">
@@ -125,7 +241,7 @@
       <button mat-raised-button color="primary" [disabled]="isSolve" (click)="pauseGame()" class="solveButton" *ngIf="gameStarted && !stopTime">
         <span>Pause</span>
       </button>
-      <button mat-raised-button color="primary" [disabled]="isSolve" (click)="continueGame()" class="solveButton" *ngIf="gameStarted && stopTime && !timeUp">
+      <button mat-raised-button color="primary" [disabled]="isSolve" (click)="continueGame()" class="solveButton" *ngIf="gameStarted && stopTime && !timeUp && !outOfLives">
         <span>Continue</span>
       </button>
 
@@ -141,18 +257,25 @@
         <span>Generate problem</span>
       </button>
 
-      <button mat-raised-button color="primary" (click)="addSolution()" class="solveButton">
+      <!-- <button mat-raised-button color="primary" (click)="addSolution()" class="solveButton">
         <span>Add Solution <strong>(For Test)</strong></span>
       </button>
 
       <button mat-raised-button color="primary" (click)="generatePuzzle()" class="solveButton">
         <span>Generating a Maze <strong>(For Test)</strong></span>
-      </button>
+      </button> -->
 
-      <button mat-raised-button color="primary" (click)="backToMenu()" class="solveButton">
+      <button mat-raised-button color="primary" (click)="backToMenu()" class="solveButton" *ngIf="!currentRoom">
         <span>Back to modes</span>
       </button>
     </div>
+
+    <button type="button" class="leave-button" *ngIf="currentRoom" (click)="leaveRoom()">
+      <span>Leave</span>
+      <svg class="leave-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="currentColor" d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+      </svg>
+    </button>
 
     <!-- <div id="notifiCation">
       <p *ngIf="isSolve && canBesolve" style="color: lime;">The Maze is solved successfully</p>

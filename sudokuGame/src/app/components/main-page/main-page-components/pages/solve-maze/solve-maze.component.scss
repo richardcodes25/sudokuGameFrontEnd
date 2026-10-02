@@ -82,8 +82,25 @@
   color: #b7e2b1;
 }
 
+.note:not(.note-ok):not(.note-bad) {
+  color: #d8ffb0;
+}
+
 .note-bad {
   color: #f0a3a3;
+}
+
+.cell.locked:not(.given) {
+  color: #146b32;
+  -webkit-text-fill-color: #146b32;
+  font-weight: 500;
+}
+
+.cell.given {
+  color: #c62828;
+  -webkit-text-fill-color: #c62828;
+  font-weight: 700;
+  cursor: default;
 }
 
 @media screen and (max-width: 798px) {

@@ -27,7 +27,34 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/favicon.png",
+              "src/sudoku-icon.svg",
+              "src/assets",
+              {
+                "glob": "worker.min.js",
+                "input": "node_modules/tesseract.js/dist",
+                "output": "/assets/tesseract"
+              },
+              {
+                "glob": "tesseract-core-*-lstm.wasm.js",
+                "input": "node_modules/tesseract.js-core",
+                "output": "/assets/tesseract"
+              },
+              {
+                "glob": "tesseract-core-lstm.wasm.js",
+                "input": "node_modules/tesseract.js-core",
+                "output": "/assets/tesseract"
+              },
+              {
+                "glob": "eng.traineddata.gz",
+                "input": "node_modules/@tesseract.js-data/eng/4.0.0_best_int",
+                "output": "/assets/tesseract"
+              },
+              {
+                "glob": "opencv.js",
+                "input": "node_modules/@techstark/opencv-js/dist",
+                "output": "/assets/opencv"
+              }
             ],
             "styles": [
               "src/styles.scss"
@@ -90,7 +117,34 @@
             "inlineStyleLanguage": "scss",
             "assets": [
               "src/favicon.ico",
-              "src/assets"
+              "src/favicon.png",
+              "src/sudoku-icon.svg",
+              "src/assets",
+              {
+                "glob": "worker.min.js",
+                "input": "node_modules/tesseract.js/dist",
+                "output": "/assets/tesseract"
+              },
+              {
+                "glob": "tesseract-core-*-lstm.wasm.js",
+                "input": "node_modules/tesseract.js-core",
+                "output": "/assets/tesseract"
+              },
+              {
+                "glob": "tesseract-core-lstm.wasm.js",
+                "input": "node_modules/tesseract.js-core",
+                "output": "/assets/tesseract"
+              },
+              {
+                "glob": "eng.traineddata.gz",
+                "input": "node_modules/@tesseract.js-data/eng/4.0.0_best_int",
+                "output": "/assets/tesseract"
+              },
+              {
+                "glob": "opencv.js",
+                "input": "node_modules/@techstark/opencv-js/dist",
+                "output": "/assets/opencv"
+              }
             ],
             "styles": [
               "src/styles.scss"

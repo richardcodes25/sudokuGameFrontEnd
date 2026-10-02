@@ -1,27 +1,38 @@
 # SudokuGame
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.0.4.
+Angular app for playing a generated Sudoku puzzle and for solving one you enter or photograph. Generated with [Angular CLI](https://github.com/angular/angular-cli) 16.0.4.
 
 ## Development server
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+Install dependencies, then start the app from this folder:
 
-## Code scaffolding
+```bash
+npm install
+npm start
+```
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+`npm start` runs `ng serve`. Open `http://localhost:4200/`. The Solve page is at `http://localhost:4200/main/solveMaze`. The app reloads when you change a source file.
+
+## Photo scan
+
+**Take picture** and **Upload photo** on the Solve page read a printed puzzle in the browser.
+
+- `@techstark/opencv-js` finds the board, straightens it, and cuts it into 81 cells along the grid lines.
+- `tesseract.js` and `@tesseract.js-data/eng` read the digits. Unsure cells stay empty.
+- Press **Solve** after correcting the grid. Clues that were already filled are shown in bold red and cannot be edited. Solved cells stay green.
+
+The Angular build copies `opencv.js`, the Tesseract worker, and `eng.traineddata.gz` into the app assets. The first scan loads those files from the app itself.
+
+Use a clear photo of the whole puzzle. Cells the scan misses can be typed in before solving.
 
 ## Build
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+`ng build` writes the production build to `dist/`.
 
-## Running unit tests
+## Tests
 
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
+`ng test` runs the unit tests with [Karma](https://karma-runner.github.io).
 
 ## Further help
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+`ng help`, or the [Angular CLI command reference](https://angular.io/cli).

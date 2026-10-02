@@ -23,8 +23,11 @@
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
     "@mui/material": "^6.1.9",
+    "@techstark/opencv-js": "^5.0.0-release.1",
+    "@tesseract.js-data/eng": "^1.0.0",
     "rxjs": "~7.8.0",
     "sweetalert2": "^11.7.20",
+    "tesseract.js": "^7.0.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.13.0"
   },

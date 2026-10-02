@@ -12,6 +12,7 @@
           *ngFor="let cell of row; trackBy: trackByIndex; let j = index"
           class="cell"
           [class.locked]="isDisabled"
+          [class.given]="isGiven(i, j)"
           [class.selected]="selectedRow === i && selectedCol === j"
           [class.related]="isRelated(i, j)"
           [class.block-right]="j % 3 === 2 && j !== 8"
@@ -25,9 +26,9 @@
           role="gridcell"
           [attr.name]="'solve-' + i + '-' + j"
           [attr.aria-label]="'Row ' + (i + 1) + ', column ' + (j + 1)"
-          [attr.tabindex]="isDisabled ? -1 : 0"
+          [attr.tabindex]="isDisabled || isGiven(i, j) ? -1 : 0"
           [value]="displayValue(cell)"
-          [readonly]="isDisabled"
+          [readonly]="isDisabled || isGiven(i, j)"
           (keydown)="onCellKeydown($event, i, j)"
           (beforeinput)="onCellBeforeInput($event, i, j)"
           (paste)="onCellPaste($event, i, j)"
@@ -39,29 +40,40 @@
   </div>
 
   <div class="direction">
-    <h3>Enter the numbers you already know, then solve the rest of the puzzle.</h3>
+    <h3>Photograph a printed puzzle, or enter the numbers you already know, then solve the rest.</h3>
     <div class="button-holder">
-      <button mat-raised-button color="primary" (click)="solveMaze()" class="solveButton">
+      <button mat-raised-button color="primary" type="button" class="solveButton" [disabled]="scanning" (click)="cameraInput.click()">
+        <span>Take picture</span>
+      </button>
+
+      <button mat-raised-button color="primary" type="button" class="solveButton" [disabled]="scanning" (click)="uploadInput.click()">
+        <span>Upload photo</span>
+      </button>
+
+      <button mat-raised-button color="primary" type="button" (click)="solveMaze()" class="solveButton" [disabled]="scanning">
         <span>Solve</span>
       </button>
 
-      <button mat-raised-button color="primary" (click)="clearMaze()" class="solveButton">
+      <button mat-raised-button color="primary" type="button" (click)="clearMaze()" class="solveButton" [disabled]="scanning">
         <span>Clear</span>
       </button>
 
-      <button mat-raised-button color="primary" (click)="printMaze()" class="solveButton">
+      <!-- <button mat-raised-button color="primary" (click)="printMaze()" class="solveButton">
         <span>Print Status <strong>(For Test)</strong></span>
       </button>
 
       <button mat-raised-button color="primary" (click)="fillMatrix()" class="solveButton">
         <span>Fill in The maze <strong>(For Test)</strong></span>
-      </button>
+      </button> -->
     </div>
+    <input #cameraInput type="file" accept="image/*" capture="environment" hidden (change)="onScanSelected($event)">
+    <input #uploadInput type="file" accept="image/*" hidden (change)="onScanSelected($event)">
     <!-- <mat-form-field class="example-full-width">
       <textarea matInput class="input-area" [(ngModel)]="input"></textarea>
     </mat-form-field> -->
 
     <div id="notifiCation">
+      <p class="note" [class.note-ok]="scanTone === 'ok'" [class.note-bad]="scanTone === 'bad'" *ngIf="scanMessage">{{ scanMessage }}</p>
       <p class="note note-ok" *ngIf="isSolve && canBesolve">The maze is solved.</p>
       <p class="note note-bad" *ngIf="!isSolve && !canBesolve">This maze cannot be solved.</p>
     </div>

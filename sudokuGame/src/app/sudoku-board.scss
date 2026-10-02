@@ -97,6 +97,11 @@
   cursor: default;
 }
 
+.cell.wrong {
+  color: #c62828;
+  -webkit-text-fill-color: #c62828;
+}
+
 .cell:not([readonly]):hover {
   background: #e7ffd8;
 }

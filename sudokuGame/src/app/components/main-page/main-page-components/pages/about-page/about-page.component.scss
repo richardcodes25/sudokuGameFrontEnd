@@ -17,12 +17,12 @@
 
 #education {
   width: 100%;
-  color: #4A96ED;
+  color: var(--about-link);
 }
 
 h1 {
-  color: white;
-  text-shadow: 3px 3px gray;
+  color: var(--heading);
+  text-shadow: 3px 3px var(--about-shadow);
 }
 
 li {
@@ -36,20 +36,20 @@ details {
 
 details summary {
   font-size: 25px;
-  color: #4A96ED;
+  color: var(--about-link);
 
   transition: font-weight color 2s;
 }
 
 details summary:hover {
   font-weight:bold;
-  color: #D1ED32;
+  color: var(--about-hover);
 }
 
 
 details p {
   font-size: 20px;
-  color: #4A96ED;
+  color: var(--about-link);
   font-style: italic;
 }
 
@@ -63,7 +63,7 @@ p::before {
   position: absolute;
   left: 0;
   top: 0.2em; /* Adjust vertical alignment */
-  color: white; /* Adjust color if needed */
+  color: var(--heading);
 }
 
 //------------------------------------------------------------
@@ -73,7 +73,7 @@ p::before {
 
 //------------------------------------------------------------
 #extra-curricular-activities {
-  color: #4A96ED;
+  color: var(--about-link);
 }
 
 //------------------------------------------------------------
@@ -108,15 +108,15 @@ p::before {
   height: 100%;
   aspect-ratio: 3/4;
   border-radius: 30px;
-  border: 4px solid limegreen;
+  border: 4px solid var(--card-border);
 
   animation: example 5s infinite;
 }
 
 .navigatingButton {
-  border: 2px solid orange;
-  color: orange;
-  background-color: #8F4A17;
+  border: 2px solid var(--home-btn-border);
+  color: var(--home-btn-text);
+  background-color: var(--home-btn-bg);
   font-family: 'Roboto', sans-serif;
   font-weight: lighter;
   padding: 5px 10px;
@@ -125,10 +125,10 @@ p::before {
 }
 
 .navigatingButton:hover {
-  border: 3px solid lime;
-  color: lime;
+  border: 3px solid var(--home-btn-hover-border);
+  color: var(--home-btn-hover-text);
   font-weight: 500;
-  background-color: #5C44DB;
+  background-color: var(--home-btn-hover-bg);
   padding: 5px 10px;
 }
 

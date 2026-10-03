@@ -13,7 +13,7 @@
 
 .loading-spinner {
   // border: 4px solid red;
-  border-top: 16px solid white;
+  border-top: 16px solid var(--spinner);
   border-radius: 50%;
   width: 30px;
   height: 30px;
@@ -34,7 +34,7 @@
 .quote-text {
   font-family: 'Playfair Display', serif;
   float: right;
-  color: lime;
+  color: var(--quote);
   font-size: 20px;
 
   // margin-top: 5px;
@@ -64,7 +64,7 @@
 
   aspect-ratio: 1/1;
 
-  border: 5px solid #148F10;
+  border: 5px solid var(--card-border);
   border-radius: 20px;
   // margin-right: 20px;
 
@@ -93,9 +93,9 @@
 }
 
 .button-holder button {
-  border: 2px solid orange;
-  color: orange;
-  background-color: #8F4A17;
+  border: 2px solid var(--home-btn-border);
+  color: var(--home-btn-text);
+  background-color: var(--home-btn-bg);
   font-family: 'Roboto', sans-serif;
   font-weight: lighter;
 
@@ -103,10 +103,10 @@
 }
 
 .button-holder button:hover {
-  border: 3px solid lime;
-  color: lime;
+  border: 3px solid var(--home-btn-hover-border);
+  color: var(--home-btn-hover-text);
   font-weight: 500;
-  background-color: #5C44DB;
+  background-color: var(--home-btn-hover-bg);
 
   transform: scale(1.25);
 }
@@ -135,7 +135,7 @@
 
 .game-title {
   font-family: 'Edu SA Beginner', cursive;
-  color: lime;
+  color: var(--title);
   font-size: 30px;
 }
 
@@ -145,7 +145,7 @@
 }
 
 #social-media h3 {
-  color: #555B5E;
+  color: var(--muted);
   font-family: 'Quicksand', sans-serif;
 }
 
@@ -172,7 +172,7 @@
 }
 
 #contact-info h1 {
-  color: white;
+  color: var(--heading);
   // font-family: 'Quicksand', sans-serif;
 }
 
@@ -183,19 +183,19 @@
 
 #contact-info div mat-icon {
   width: 5%;
-  color: lime;
+  color: var(--contact);
 }
 
 #contact-info div p {
   width: 90%;
-  color: lime;
+  color: var(--contact);
 }
 
 //Footer ----------------------------------------------------------------------------------------
 .footer {
   // height: 5%;
   margin-bottom: 5px;
-  color: #34DB2F;
+  color: var(--footer);
   font-size: 20px;
   font-weight: 600;
   font-family: 'Roboto', sans-serif;

@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { ShareService } from 'src/app/share.service';
+import { ThemeService } from 'src/app/theme.service';
 
 
 @Component({
@@ -19,7 +20,7 @@ export class NavBarComponent {
     return Math.floor(Math.random() * max);
   }
 
-  constructor(private shareService: ShareService) {
+  constructor(private shareService: ShareService, public theme: ThemeService) {
     //Fetch API from JSON Quotes API
     // fetch("https://type.fit/api/quotes")
     // .then(function(response) {
@@ -33,6 +34,10 @@ export class NavBarComponent {
 
   ngOnInit() {
     console.clear();
+  }
+
+  toggleTheme() {
+    this.theme.toggle();
   }
 
   sendTingleSolve() {

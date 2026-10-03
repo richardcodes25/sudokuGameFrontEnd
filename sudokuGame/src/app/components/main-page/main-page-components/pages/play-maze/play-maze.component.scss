@@ -24,9 +24,9 @@
   width: min(100%, 420px);
   box-sizing: border-box;
   padding: 28px 24px;
-  border: 1px solid rgba(20, 143, 16, 0.45);
+  border: 1px solid var(--panel-border);
   border-radius: 20px;
-  background: linear-gradient(180deg, #142416 0%, #0d160e 100%);
+  background: var(--panel-bg);
 }
 
 .stop-watch h3 {
@@ -35,7 +35,7 @@
   font-weight: 400;
   font-size: 14px;
   letter-spacing: 0.04em;
-  color: #9dcea0;
+  color: var(--panel-muted);
 }
 
 #timer {
@@ -45,16 +45,16 @@
   font-weight: 500;
   line-height: 1.1;
   letter-spacing: 0.04em;
-  color: lime;
+  color: var(--timer);
 }
 
 #timer.time-up {
-  color: #ffb4b4;
+  color: var(--error);
 }
 
 .player-note {
   margin: 8px 0 0;
-  color: #9dcea0;
+  color: var(--panel-muted);
   font-family: 'Roboto', sans-serif;
   font-size: 14px;
 }
@@ -67,11 +67,11 @@
 }
 
 .heart {
-  color: #ff4d6d;
+  color: var(--heart);
 }
 
 .heart.lost {
-  color: rgba(255, 77, 109, 0.28);
+  color: var(--heart-lost);
 }
 
 .button-holder {
@@ -86,20 +86,20 @@
   margin: 0;
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid rgba(50, 205, 50, 0.55);
+  border: 1px solid var(--btn-border);
   border-radius: 999px;
   background: transparent;
   box-shadow: none;
-  color: #d8ffb0;
+  color: var(--btn-text);
   font-family: 'Roboto', sans-serif;
   font-weight: 400;
   letter-spacing: 0.01em;
 }
 
 .button-holder button:hover:not(:disabled) {
-  border-color: lime;
-  background: #148f10;
-  color: #f3ffe8;
+  border-color: var(--btn-hover-border);
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
 }
 
 .button-holder button:disabled {
@@ -117,8 +117,8 @@
   padding: 0 22px;
   border: 0;
   border-radius: 999px;
-  background: #d32f2f;
-  color: #fff;
+  background: var(--danger);
+  color: var(--danger-text);
   font-family: 'Roboto', sans-serif;
   font-size: 18px;
   font-weight: 500;
@@ -127,7 +127,7 @@
 }
 
 .leave-button:hover {
-  background: #b71c1c;
+  background: var(--danger-hover);
 }
 
 .leave-icon {
@@ -171,20 +171,18 @@
   aspect-ratio: 1;
   min-height: 0;
   padding: 36px;
-  border: 5px solid #148f10;
+  border: 5px solid var(--mode-border);
   border-radius: 20px;
-  background:
-    radial-gradient(circle at 50% 30%, rgba(50, 205, 50, 0.22), transparent 55%),
-    #10210f;
-  color: lime;
+  background: var(--mode-bg);
+  color: var(--mode-text);
   text-align: left;
   cursor: pointer;
   font-family: 'Roboto', sans-serif;
 }
 
 .mode-card:hover {
-  background: #148f10;
-  color: #041406;
+  background: var(--mode-hover-bg);
+  color: var(--mode-hover-text);
 }
 
 .mode-title {
@@ -206,7 +204,7 @@
   justify-content: center;
   align-items: center;
   padding: 24px;
-  background: rgba(0, 0, 0, 0.62);
+  background: var(--backdrop);
 }
 
 .dialog {
@@ -215,30 +213,30 @@
   overflow: auto;
   box-sizing: border-box;
   padding: 28px 24px;
-  border: 2px solid #148f10;
+  border: 2px solid var(--dialog-border);
   border-radius: 18px;
-  background: #101910;
-  color: #e7ffe4;
+  background: var(--dialog-bg);
+  color: var(--panel-text);
   font-family: 'Roboto', sans-serif;
 }
 
 .dialog h2 {
   margin: 0 0 8px;
-  color: lime;
+  color: var(--panel-heading);
   font-size: 26px;
   font-weight: 500;
 }
 
 .dialog-lead {
   margin: 0 0 22px;
-  color: #d7f5cf;
+  color: var(--panel-soft);
   font-size: 16px;
   line-height: 1.45;
 }
 
 .dialog-label {
   margin: 18px 0 8px;
-  color: #9dcea0;
+  color: var(--panel-muted);
   font-size: 13px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -258,10 +256,10 @@
 .dialog-button,
 .choice,
 .timer-option {
-  border: 1px solid rgba(50, 205, 50, 0.55);
+  border: 1px solid var(--btn-border);
   border-radius: 12px;
   background: transparent;
-  color: #d8ffb0;
+  color: var(--btn-text);
   font-family: 'Roboto', sans-serif;
   cursor: pointer;
 }
@@ -275,9 +273,9 @@
 .dialog-button-solid,
 .choice.selected,
 .timer-option.selected {
-  border-color: lime;
-  background: #148f10;
-  color: #f3ffe8;
+  border-color: var(--btn-hover-border);
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
 }
 
 .dialog-button:disabled {
@@ -311,13 +309,13 @@
 }
 
 .timer-sub {
-  color: #c5e8bc;
+  color: var(--dialog-sub);
   font-size: 13px;
   line-height: 1.4;
 }
 
 .timer-option.selected .timer-sub {
-  color: #f3ffe8;
+  color: var(--btn-hover-text);
 }
 
 .field-row {
@@ -335,7 +333,7 @@
   flex-direction: column;
   gap: 6px;
   margin-bottom: 14px;
-  color: #9dcea0;
+  color: var(--panel-muted);
   font-size: 13px;
 }
 
@@ -346,10 +344,10 @@
 .field input {
   height: 42px;
   padding: 0 12px;
-  border: 1px solid #1f8a2a;
+  border: 1px solid var(--input-border);
   border-radius: 10px;
-  background: #0c160d;
-  color: #e7ffe4;
+  background: var(--input-bg);
+  color: var(--input-text);
   font-size: 15px;
 }
 
@@ -362,11 +360,11 @@
 }
 
 .dialog-note {
-  color: #9dcea0;
+  color: var(--panel-muted);
 }
 
 .field-error {
-  color: #ffb4b4;
+  color: var(--error);
 }
 
 .room-id {
@@ -374,7 +372,7 @@
   font-family: 'Orbitron', sans-serif;
   font-size: 36px;
   letter-spacing: 0.14em;
-  color: lime;
+  color: var(--panel-heading);
 }
 
 .room-id-actions {
@@ -384,7 +382,7 @@
 .room-details {
   margin: 18px 0 0;
   padding-left: 18px;
-  color: #d7f5cf;
+  color: var(--panel-soft);
   line-height: 1.6;
 }
 
@@ -398,17 +396,17 @@
   width: min(100%, 760px);
   box-sizing: border-box;
   padding: 28px 24px;
-  border: 1px solid rgba(20, 143, 16, 0.45);
+  border: 1px solid var(--panel-border);
   border-radius: 20px;
-  background: linear-gradient(180deg, #142416 0%, #0d160e 100%);
-  color: #e7ffe4;
+  background: var(--panel-bg);
+  color: var(--panel-text);
   font-family: 'Roboto', sans-serif;
 }
 
 .lobby-card h2,
 .lobby-card h3 {
   margin: 0 0 8px;
-  color: lime;
+  color: var(--panel-heading);
   font-weight: 500;
 }
 
@@ -425,13 +423,13 @@
 .room-table th,
 .room-table td {
   padding: 10px 8px;
-  border-bottom: 1px solid rgba(50, 205, 50, 0.25);
+  border-bottom: 1px solid var(--table-line);
   text-align: left;
-  color: #e7ffe4;
+  color: var(--panel-text);
 }
 
 .room-table th {
-  color: #9dcea0;
+  color: var(--panel-muted);
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.04em;

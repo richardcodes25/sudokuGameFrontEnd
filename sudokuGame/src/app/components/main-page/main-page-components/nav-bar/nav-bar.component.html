@@ -10,6 +10,19 @@
     <li id="solve" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}"><a routerLink="solveMaze" (click)="sendTingleSolve()">Solve</a></li>
     <!-- <li id="about"><a routerLink="aboutme" (click)="sendTingleAbout()">About me</a></li> -->
 
+    <li class="theme-item">
+      <button
+        type="button"
+        class="theme-switch"
+        role="switch"
+        [class.pastel]="theme.isPastel"
+        [attr.aria-checked]="theme.isPastel"
+        [attr.aria-label]="theme.isPastel ? 'Pastel theme. Switch to the green theme.' : 'Green theme. Switch to the pastel theme.'"
+        (click)="toggleTheme()">
+        <span class="theme-track" aria-hidden="true"><span class="theme-thumb"></span></span>
+      </button>
+    </li>
+
     <li class="icon"><a href="javascript:void(0);" onclick="myFunction()"><mat-icon>list</mat-icon></a></li>
   </ul>
 </div>

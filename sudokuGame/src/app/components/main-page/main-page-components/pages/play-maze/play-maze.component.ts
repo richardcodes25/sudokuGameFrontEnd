@@ -1,8 +1,9 @@
-import { Component, ElementRef, HostListener, QueryList, ViewChildren } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, QueryList, ViewChildren } from '@angular/core';
+import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 import { MazeSquare } from './MazeSquare';
 import { ShareService } from 'src/app/share.service';
-import { Difficulty, GameRoom, RoomService } from 'src/app/room.service';
+import { Difficulty, GameRoom, RoomPlayer, RoomService } from 'src/app/room.service';
 
 class Coordinate {
   row: number;
@@ -20,7 +21,7 @@ class Coordinate {
   styleUrls: ['./play-maze.component.scss']
 })
 
-export class PlayMazeComponent {
+export class PlayMazeComponent implements OnInit, OnDestroy {
   @ViewChildren('cellInput') cellInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   mazeList : MazeSquare[][];
@@ -36,7 +37,7 @@ export class PlayMazeComponent {
 
   time: string = "00:00:00";
   stopTime: boolean = true;
-  screen: 'menu' | 'lobby' | 'play' = 'menu';
+  screen: 'menu' | 'lobby' | 'room' | 'play' = 'menu';
   playMode: 'friend' | 'computer' = 'friend';
   pendingMode: 'friend' | 'computer' = 'computer';
   dialog: 'none' | 'account' | 'signin' | 'setup' | 'create-room' | 'room-ready' = 'none';
@@ -66,6 +67,11 @@ export class PlayMazeComponent {
   signedIn = false;
   signInEmail = '';
   signInPassword = '';
+  guestId = '';
+  roomNotice = '';
+  private loadedRound = -1;
+  private roomWatch?: Subscription;
+  private readonly guestKey = 'sudoku-guest-id';
   second: string = "0";
   minute: string = "0";
   hour: string = "0";
@@ -88,8 +94,21 @@ export class PlayMazeComponent {
     this.shareService.maze = [];
   }
 
+  ngOnInit(): void {
+    this.guestId = sessionStorage.getItem(this.guestKey) ?? '';
+    this.roomWatch = this.roomService.changes$.subscribe(() => this.onRoomsChanged());
+  }
+
+  ngOnDestroy(): void {
+    this.roomWatch?.unsubscribe();
+  }
+
   trackByIndex(index: number): number {
     return index;
+  }
+
+  trackByPlayer(_index: number, player: RoomPlayer): string {
+    return player.id;
   }
 
   displayValue(cell: MazeSquare): string {
@@ -293,6 +312,7 @@ export class PlayMazeComponent {
   }
 
   chooseFriend(): void {
+    this.ensureGuestId();
     this.pendingMode = 'friend';
     this.playMode = 'friend';
     this.dialog = 'account';
@@ -338,7 +358,43 @@ export class PlayMazeComponent {
     if (this.signedIn && this.signInEmail.trim()) {
       return this.signInEmail.trim();
     }
-    return 'Guest';
+    return this.guestId || 'guest';
+  }
+
+  isHost(): boolean {
+    return !!this.currentRoom?.players.some(player => player.isHost && player.id === this.guestId);
+  }
+
+  waitingSummary(): string {
+    const waiting = this.currentRoom?.players.filter(player => !player.isHost).length ?? 0;
+    if (waiting === 0) {
+      return 'No one else has joined yet.';
+    }
+    if (waiting === 1) {
+      return '1 player joined and is waiting.';
+    }
+    return waiting + ' players joined and are waiting.';
+  }
+
+  avatarColor(id: string): string {
+    const colors = ['#6aaedc', '#e090b4', '#b496e0', '#7dcaa8', '#e0b06a', '#8a90d8'];
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = (hash + id.charCodeAt(i)) % colors.length;
+    }
+    return colors[hash];
+  }
+
+  private ensureGuestId(): string {
+    if (!this.guestId) {
+      this.guestId = 'guest-' + Math.floor(1000000 + Math.random() * 9000000);
+      sessionStorage.setItem(this.guestKey, this.guestId);
+    }
+    return this.guestId;
+  }
+
+  private currentPlayer(): RoomPlayer {
+    return { id: this.ensureGuestId(), name: this.playerName(), isHost: false };
   }
 
   difficultyLabel(level: Difficulty): string {
@@ -376,18 +432,30 @@ export class PlayMazeComponent {
     if (this.roomNameError()) {
       return;
     }
-    const room = this.roomService.create(this.roomName, this.roomIsPublic, this.roomDifficulty, this.playerName(), this.roomRequireBoth);
+    const room = this.roomService.create(this.roomName, this.roomIsPublic, this.roomDifficulty, this.currentPlayer(), this.roomRequireBoth);
     this.currentRoom = room;
+    this.loadedRound = room.round;
     this.idCopied = false;
+    this.roomNotice = '';
     this.dialog = 'room-ready';
   }
 
   startHostedGame(): void {
-    if (!this.currentRoom) {
+    if (!this.currentRoom || !this.isHost()) {
       return;
     }
-    const latest = this.roomService.getRoom(this.currentRoom.id) ?? this.currentRoom;
-    this.enterRoom(latest);
+    this.difficulty = this.currentRoom.difficulty;
+    this.generatePuzzle();
+    this.roomService.publishPuzzle(this.currentRoom.id, this.cloneDeep(this.chuot_bach_array), this.guestId);
+  }
+
+  nextMaze(): void {
+    if (!this.currentRoom || !this.isHost()) {
+      return;
+    }
+    this.difficulty = this.currentRoom.difficulty;
+    this.generatePuzzle();
+    this.roomService.publishPuzzle(this.currentRoom.id, this.cloneDeep(this.chuot_bach_array), this.guestId);
   }
 
   cancelCreatedRoom(): void {
@@ -406,7 +474,7 @@ export class PlayMazeComponent {
   }
 
   joinByRoomId(): void {
-    const result = this.roomService.joinByCode(this.roomCode, this.playerName());
+    const result = this.roomService.joinByCode(this.roomCode, this.currentPlayer());
     this.roomCodeError = result.error;
     if (result.room) {
       this.roomCode = '';
@@ -415,7 +483,7 @@ export class PlayMazeComponent {
   }
 
   joinRoom(room: GameRoom): void {
-    const error = this.roomService.join(room.id, this.playerName());
+    const error = this.roomService.join(room.id, this.currentPlayer());
     if (error) {
       this.privateJoinError = error;
       this.refreshRooms();
@@ -428,7 +496,7 @@ export class PlayMazeComponent {
   }
 
   joinPrivateRoom(): void {
-    const result = this.roomService.joinPrivate(this.privateJoinCode, this.privateRoomName, this.playerName());
+    const result = this.roomService.joinPrivate(this.privateJoinCode, this.privateRoomName, this.currentPlayer());
     this.privateJoinError = result.error;
     if (result.room) {
       this.privateJoinCode = '';
@@ -440,9 +508,12 @@ export class PlayMazeComponent {
   leaveRoom(): void {
     this.stopTime = true;
     if (this.currentRoom) {
-      this.roomService.leave(this.currentRoom.id, this.playerName());
+      this.roomService.leave(this.currentRoom.id, this.guestId);
       this.currentRoom = null;
+      this.loadedRound = -1;
+      this.roomNotice = '';
     }
+    this.dialog = 'none';
     this.gameStarted = false;
     this.screen = 'lobby';
     this.refreshRooms();
@@ -463,10 +534,75 @@ export class PlayMazeComponent {
     this.difficulty = room.difficulty;
     this.timerMode = 'stopwatch';
     this.dialog = 'none';
-    this.screen = 'play';
     this.privateJoinError = '';
+    this.roomNotice = '';
+    this.loadedRound = room.round;
+    if (room.puzzle && room.round > 0) {
+      this.dialog = 'none';
+      this.screen = 'play';
+      this.applyPuzzle(room.puzzle);
+      return;
+    }
+    this.screen = 'lobby';
+    this.dialog = 'room-ready';
+  }
+
+  private onRoomsChanged(): void {
+    this.refreshRooms();
+    if (!this.currentRoom) {
+      return;
+    }
+    const latest = this.roomService.getRoom(this.currentRoom.id);
+    if (!latest || !latest.players.some(player => player.id === this.guestId)) {
+      this.stopTime = true;
+      this.currentRoom = null;
+      this.loadedRound = -1;
+      this.dialog = 'none';
+      this.screen = 'lobby';
+      this.refreshRooms();
+      return;
+    }
+    const wasPlaying = this.screen === 'play';
+    const roundChanged = latest.round !== this.loadedRound && !!latest.puzzle;
+    this.currentRoom = latest;
+    if (!roundChanged || !latest.puzzle) {
+      return;
+    }
+    this.loadedRound = latest.round;
+    this.difficulty = latest.difficulty;
+    this.roomNotice = wasPlaying && latest.round > 1
+      ? 'The host moved everyone to the next maze.'
+      : '';
+    this.dialog = 'none';
+    this.screen = 'play';
+    this.applyPuzzle(latest.puzzle);
+  }
+
+  private applyPuzzle(grid: number[][]): void {
+    this.mazeReady = true;
+    this.lives = this.maxLives;
+    this.outOfLives = false;
+    this.isSolve = false;
+    this.chuot_bach_array = grid.map(row => [...row]);
     this.resetClock();
-    this.fillMatrix();
+    for (let i = 0; i < 9; i++) {
+      for (let j = 0; j < 9; j++) {
+        this.mazeList[i][j].isWrong = false;
+        if (this.chuot_bach_array[i][j] == 0) {
+          this.mazeList[i][j].value = '';
+          this.mazeList[i][j].isDisable = false;
+          this.mazeList[i][j].isClue = false;
+        } else {
+          this.mazeList[i][j].value = this.chuot_bach_array[i][j];
+          this.mazeList[i][j].isDisable = true;
+          this.mazeList[i][j].isClue = true;
+        }
+      }
+    }
+    this.gameStarted = true;
+    this.checkButtonDisable = false;
+    this.stopTime = false;
+    this.timerCycle();
   }
 
   selectDifficulty(level: 'easy' | 'medium' | 'hard'): void {

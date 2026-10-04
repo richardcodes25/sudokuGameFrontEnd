@@ -106,23 +106,20 @@
 
     <ng-container *ngIf="dialog === 'room-ready' && currentRoom">
       <h2 id="play-dialog-title">{{ currentRoom.name }}</h2>
-      <p class="dialog-lead">Share this room ID so others can join. The game starts when you press Start.</p>
+      <p class="dialog-lead" *ngIf="isHost()">Share this room ID so others can join. The game starts when you press Start.</p>
+      <p class="dialog-lead" *ngIf="!isHost()">This room is open. Waiting here until the host starts.</p>
       <p class="dialog-label">Room ID</p>
       <p class="room-id">{{ currentRoom.code }}</p>
-      <div class="dialog-actions room-id-actions">
+      <div class="dialog-actions room-id-actions" *ngIf="isHost()">
         <button type="button" class="dialog-button" (click)="copyRoomId()">{{ idCopied ? 'Copied' : 'Copy room ID' }}</button>
       </div>
-      <ul class="room-details">
-        <li>{{ currentRoom.isPublic ? 'Public' : 'Private' }}</li>
-        <li>{{ currentRoom.requireBoth ? 'Join with room name and room ID' : 'Join with room ID or room name' }}</li>
-        <li>{{ difficultyLabel(currentRoom.difficulty) }}</li>
-        <li>{{ currentRoom.players.length }} / {{ currentRoom.maxPlayers }} players</li>
-        <li>{{ currentRoom.players.join(', ') }}</li>
-      </ul>
-      <p class="dialog-note">{{ currentRoom.requireBoth ? 'Share both the room name and this ID. You can wait here for your team.' : 'Others can join with this ID, or with the room name. You can wait here for your team.' }}</p>
+      <p class="waiting-count" *ngIf="isHost()">{{ waitingSummary() }}</p>
+      <p class="waiting-count" *ngIf="!isHost()">{{ currentRoom.players.length }} / {{ currentRoom.maxPlayers }} players are waiting for the host to start.</p>
+      <ng-container *ngTemplateOutlet="playerRoster; context: { $implicit: currentRoom.players }"></ng-container>
       <div class="dialog-actions">
-        <button type="button" class="dialog-button" (click)="cancelCreatedRoom()">Cancel</button>
-        <button type="button" class="dialog-button dialog-button-solid" (click)="startHostedGame()">Start</button>
+        <button type="button" class="dialog-button" *ngIf="isHost()" (click)="cancelCreatedRoom()">Cancel</button>
+        <button type="button" class="dialog-button" *ngIf="!isHost()" (click)="leaveRoom()">Leave</button>
+        <button type="button" class="dialog-button dialog-button-solid" *ngIf="isHost()" (click)="startHostedGame()">Start</button>
       </div>
     </ng-container>
   </div>
@@ -131,7 +128,7 @@
 <div class="lobby" *ngIf="screen === 'lobby'">
   <div class="lobby-card">
     <h2>Play with friend</h2>
-    <p class="dialog-note">{{ signedIn ? 'Signed in as ' + signInEmail : 'Playing as guest. Points from this room will not be saved.' }}</p>
+    <p class="dialog-note">{{ signedIn ? 'Signed in as ' + signInEmail : 'Playing as ' + playerName() + '. Points from this room will not be saved.' }}</p>
     <div class="dialog-actions">
       <button type="button" class="dialog-button dialog-button-solid" (click)="openCreateRoom()">Create room</button>
       <button type="button" class="dialog-button" (click)="backToMenu()">Back</button>
@@ -230,8 +227,10 @@
       <p class="lives" [attr.aria-label]="lives === 1 ? '1 life left' : lives + ' lives left'">
         <span *ngFor="let slot of lifeSlots" class="heart" [class.lost]="slot >= lives">&#x2665;</span>
       </p>
-      <p class="player-note" *ngIf="currentRoom">{{ currentRoom.name }} · ID {{ currentRoom.code }} · {{ currentRoom.players.length }} / {{ currentRoom.maxPlayers }}</p>
-      <p class="player-note" *ngIf="playMode === 'computer' || currentRoom">{{ signedIn ? 'Signed in as ' + signInEmail : 'Playing as guest' }}</p>
+      <p class="player-note" *ngIf="currentRoom">{{ currentRoom.name }} · ID {{ currentRoom.code }}</p>
+      <ng-container *ngIf="currentRoom" [ngTemplateOutlet]="playerRoster" [ngTemplateOutletContext]="{ $implicit: currentRoom.players }"></ng-container>
+      <p class="player-note" *ngIf="roomNotice">{{ roomNotice }}</p>
+      <p class="player-note" *ngIf="playMode === 'computer'">{{ signedIn ? 'Signed in as ' + signInEmail : 'Playing as guest' }}</p>
     </div>
 
     <div class="button-holder">
@@ -265,6 +264,10 @@
         <span>Generating a Maze <strong>(For Test)</strong></span>
       </button> -->
 
+      <button mat-raised-button color="primary" (click)="nextMaze()" class="solveButton" *ngIf="isHost()">
+        <span>Next maze</span>
+      </button>
+
       <button mat-raised-button color="primary" (click)="backToMenu()" class="solveButton" *ngIf="!currentRoom">
         <span>Back to modes</span>
       </button>
@@ -284,3 +287,18 @@
     </div> -->
   </div>
 </div>
+
+<ng-template #playerRoster let-players>
+  <div class="room-players">
+    <div class="room-player" *ngFor="let player of players; trackBy: trackByPlayer">
+      <span class="player-avatar" [style.background]="avatarColor(player.id)" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="8" r="3.2" fill="currentColor"></circle>
+          <path fill="currentColor" d="M5.5 19.2c.6-3.1 3-4.7 6.5-4.7s5.9 1.6 6.5 4.7c.1.6-.3 1.1-.9 1.1H6.4c-.6 0-1-.5-.9-1.1z"></path>
+        </svg>
+      </span>
+      <span class="player-name" [attr.title]="player.name">{{ player.name }}</span>
+      <span class="host-tag" *ngIf="player.isHost">(host)</span>
+    </div>
+  </div>
+</ng-template>

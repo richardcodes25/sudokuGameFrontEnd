@@ -1,4 +1,4 @@
-# sudokuGameFrontEnd
+# sudokuGameFrontEnd-v0
 
 A web Sudoku app for solving a puzzle you already have, and for playing a generated one.
 
@@ -48,3 +48,4 @@ Open `http://localhost:4200/`. Solve is at `http://localhost:4200/main/solveMaze
 - Angular Material, SweetAlert
 - OpenCV.js and Tesseract.js for the photo scan
 - Deployment: Vercel
+

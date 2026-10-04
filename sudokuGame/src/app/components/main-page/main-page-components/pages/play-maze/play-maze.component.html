@@ -82,6 +82,7 @@
         <input type="text" name="room-name" maxlength="25" autocomplete="off" [(ngModel)]="roomName" />
       </label>
       <p class="field-error" *ngIf="roomName && roomNameError()">{{ roomNameError() }}</p>
+      <p class="field-error" *ngIf="createError">{{ createError }}</p>
       <p class="dialog-label">Who can join</p>
       <div class="choice-row">
         <button type="button" class="choice" [class.selected]="roomIsPublic" (click)="roomIsPublic = true">Public</button>
@@ -115,6 +116,7 @@
       </div>
       <p class="waiting-count" *ngIf="isHost()">{{ waitingSummary() }}</p>
       <p class="waiting-count" *ngIf="!isHost()">{{ currentRoom.players.length }} / {{ currentRoom.maxPlayers }} players are waiting for the host to start.</p>
+      <p class="field-error" *ngIf="roomNotice">{{ roomNotice }}</p>
       <ng-container *ngTemplateOutlet="playerRoster; context: { $implicit: currentRoom.players }"></ng-container>
       <div class="dialog-actions">
         <button type="button" class="dialog-button" *ngIf="isHost()" (click)="cancelCreatedRoom()">Cancel</button>
@@ -157,7 +159,8 @@
         </tr>
       </tbody>
     </table>
-    <p class="dialog-note" *ngIf="!publicRooms.length">No public rooms are open.</p>
+    <p class="dialog-note" *ngIf="roomService.offline">The game server is not running. Start it, then try again.</p>
+    <p class="dialog-note" *ngIf="!roomService.offline && !publicRooms.length">No public rooms are open.</p>
 
     <h3>Join with a room ID</h3>
     <label class="field">

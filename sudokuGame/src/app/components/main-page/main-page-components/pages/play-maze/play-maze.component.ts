@@ -3,7 +3,7 @@ import { Subscription } from 'rxjs';
 import Swal from 'sweetalert2';
 import { MazeSquare } from './MazeSquare';
 import { ShareService } from 'src/app/share.service';
-import { Difficulty, GameRoom, RoomPlayer, RoomService } from 'src/app/room.service';
+import { Difficulty, GameRoom, RoomPlayer, ROOM_API_URL, RoomService } from 'src/app/room.service';
 
 class Coordinate {
   row: number;
@@ -57,6 +57,7 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
   privateJoinError = '';
   roomCode = '';
   roomCodeError = '';
+  createError = '';
   idCopied = false;
   timerMode: 'stopwatch' | 'countdown' = 'stopwatch';
   countdownMinutes = 15;
@@ -81,7 +82,7 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
 
   checkButtonDisable: boolean= false;
 
-  constructor(private shareService: ShareService, private roomService: RoomService) {
+  constructor(private shareService: ShareService, public roomService: RoomService) {
     this.mazeList = [];
     for (let i=0;i<9;i++) {
       this.mazeList[i] = [];
@@ -425,37 +426,49 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
     this.roomIsPublic = true;
     this.roomRequireBoth = false;
     this.roomDifficulty = 'medium';
+    this.createError = '';
     this.dialog = 'create-room';
   }
 
-  createRoom(): void {
+  async createRoom(): Promise<void> {
+    this.createError = '';
     if (this.roomNameError()) {
       return;
     }
-    const room = this.roomService.create(this.roomName, this.roomIsPublic, this.roomDifficulty, this.currentPlayer(), this.roomRequireBoth);
-    this.currentRoom = room;
-    this.loadedRound = room.round;
+    const result = await this.roomService.create(this.roomName, this.roomIsPublic, this.roomDifficulty, this.currentPlayer(), this.roomRequireBoth);
+    if (!result.room) {
+      this.createError = result.error;
+      return;
+    }
+    this.currentRoom = result.room;
+    this.loadedRound = result.room.round;
     this.idCopied = false;
     this.roomNotice = '';
     this.dialog = 'room-ready';
   }
 
-  startHostedGame(): void {
+  async startHostedGame(): Promise<void> {
     if (!this.currentRoom || !this.isHost()) {
       return;
     }
     this.difficulty = this.currentRoom.difficulty;
     this.generatePuzzle();
-    this.roomService.publishPuzzle(this.currentRoom.id, this.cloneDeep(this.chuot_bach_array), this.guestId);
+    const room = await this.roomService.publishPuzzle(this.currentRoom.id, this.cloneDeep(this.chuot_bach_array), this.guestId);
+    if (!room) {
+      this.roomNotice = 'The room could not be started.';
+    }
   }
 
-  nextMaze(): void {
+  async nextMaze(): Promise<void> {
     if (!this.currentRoom || !this.isHost()) {
       return;
     }
     this.difficulty = this.currentRoom.difficulty;
     this.generatePuzzle();
-    this.roomService.publishPuzzle(this.currentRoom.id, this.cloneDeep(this.chuot_bach_array), this.guestId);
+    const room = await this.roomService.publishPuzzle(this.currentRoom.id, this.cloneDeep(this.chuot_bach_array), this.guestId);
+    if (!room) {
+      this.roomNotice = 'The next maze could not be shared.';
+    }
   }
 
   cancelCreatedRoom(): void {
@@ -473,8 +486,8 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
     });
   }
 
-  joinByRoomId(): void {
-    const result = this.roomService.joinByCode(this.roomCode, this.currentPlayer());
+  async joinByRoomId(): Promise<void> {
+    const result = await this.roomService.joinByCode(this.roomCode, this.currentPlayer());
     this.roomCodeError = result.error;
     if (result.room) {
       this.roomCode = '';
@@ -482,21 +495,18 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
     }
   }
 
-  joinRoom(room: GameRoom): void {
-    const error = this.roomService.join(room.id, this.currentPlayer());
-    if (error) {
-      this.privateJoinError = error;
+  async joinRoom(room: GameRoom): Promise<void> {
+    const result = await this.roomService.join(room.id, this.currentPlayer());
+    if (result.error || !result.room) {
+      this.privateJoinError = result.error || 'That room is no longer open.';
       this.refreshRooms();
       return;
     }
-    const joined = this.roomService.getRoom(room.id);
-    if (joined) {
-      this.enterRoom(joined);
-    }
+    this.enterRoom(result.room);
   }
 
-  joinPrivateRoom(): void {
-    const result = this.roomService.joinPrivate(this.privateJoinCode, this.privateRoomName, this.currentPlayer());
+  async joinPrivateRoom(): Promise<void> {
+    const result = await this.roomService.joinPrivate(this.privateJoinCode, this.privateRoomName, this.currentPlayer());
     this.privateJoinError = result.error;
     if (result.room) {
       this.privateJoinCode = '';
@@ -505,18 +515,31 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
     }
   }
 
-  leaveRoom(): void {
+  async leaveRoom(): Promise<void> {
     this.stopTime = true;
     if (this.currentRoom) {
-      this.roomService.leave(this.currentRoom.id, this.guestId);
+      const roomId = this.currentRoom.id;
       this.currentRoom = null;
       this.loadedRound = -1;
       this.roomNotice = '';
+      await this.roomService.leave(roomId, this.guestId);
     }
     this.dialog = 'none';
     this.gameStarted = false;
     this.screen = 'lobby';
     this.refreshRooms();
+  }
+
+  @HostListener('window:beforeunload')
+  leaveIfClosed(): void {
+    if (!this.currentRoom || !this.guestId) {
+      return;
+    }
+    const payload = JSON.stringify({ playerId: this.guestId });
+    navigator.sendBeacon(
+      ROOM_API_URL + '/rooms/' + this.currentRoom.id + '/leave',
+      new Blob([payload], { type: 'application/json' })
+    );
   }
 
   backToLobby(): void {
@@ -537,6 +560,7 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
     this.privateJoinError = '';
     this.roomNotice = '';
     this.loadedRound = room.round;
+    this.roomService.watch(room.id);
     if (room.puzzle && room.round > 0) {
       this.dialog = 'none';
       this.screen = 'play';
@@ -557,6 +581,7 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
       this.stopTime = true;
       this.currentRoom = null;
       this.loadedRound = -1;
+      this.roomService.watch(null);
       this.dialog = 'none';
       this.screen = 'lobby';
       this.refreshRooms();

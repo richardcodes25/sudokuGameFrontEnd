@@ -191,34 +191,43 @@
   <div class="board-panel">
     <div class="board" role="grid" aria-label="Sudoku board">
       <ng-container *ngFor="let row of mazeList; trackBy: trackByIndex; let i = index">
-        <input
-          #cellInput
+        <div
           *ngFor="let cell of row; trackBy: trackByIndex; let j = index"
           class="cell"
           [class.clue]="cell.isClue"
-          [class.wrong]="cell.isWrong"
+          [class.wrong]="cell.isWrong && !cell.isNote"
           [class.selected]="selectedRow === i && selectedCol === j"
           [class.related]="isRelated(i, j)"
+          [class.note-mode]="cell.isNote"
           [class.block-right]="j % 3 === 2 && j !== 8"
           [class.block-bottom]="i % 3 === 2 && i !== 8"
-          type="text"
-          inputmode="numeric"
-          maxlength="1"
-          autocomplete="off"
-          autocapitalize="off"
-          spellcheck="false"
-          role="gridcell"
-          [attr.name]="'play-' + i + '-' + j"
-          [attr.aria-label]="'Row ' + (i + 1) + ', column ' + (j + 1)"
-          [attr.tabindex]="cell.isDisable ? -1 : 0"
-          [value]="displayValue(cell)"
-          [readonly]="cell.isDisable"
-          (keydown)="onCellKeydown($event, i, j)"
-          (beforeinput)="onCellBeforeInput($event, i, j)"
-          (paste)="onCellPaste($event, i, j)"
-          (focus)="onCellFocus($event, i, j)"
-          (blur)="onCellBlur($event)"
-        />
+          (dblclick)="onCellDoubleClick($event, i, j)"
+        >
+          <span class="note-grid" *ngIf="cell.isNote" aria-hidden="true">
+            <span *ngFor="let digit of noteDigits" [class.on]="hasNote(cell, digit)">{{ hasNote(cell, digit) ? digit : '' }}</span>
+          </span>
+          <input
+            #cellInput
+            [class.note-input]="cell.isNote"
+            type="text"
+            inputmode="numeric"
+            maxlength="1"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            role="gridcell"
+            [attr.name]="'play-' + i + '-' + j"
+            [attr.aria-label]="noteLabel(cell, i, j)"
+            [attr.tabindex]="cell.isDisable ? -1 : 0"
+            [value]="cell.isNote ? '' : displayValue(cell)"
+            [readonly]="cell.isDisable"
+            (keydown)="onCellKeydown($event, i, j)"
+            (beforeinput)="onCellBeforeInput($event, i, j)"
+            (paste)="onCellPaste($event, i, j)"
+            (focus)="onCellFocus($event, i, j)"
+            (blur)="onCellBlur($event)"
+          />
+        </div>
       </ng-container>
     </div>
   </div>

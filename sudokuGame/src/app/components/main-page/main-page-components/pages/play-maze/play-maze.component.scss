@@ -489,3 +489,54 @@
   font-weight: 500;
   letter-spacing: 0.04em;
 }
+
+.play-page .cell {
+  position: relative;
+}
+
+.play-page .cell input {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  -webkit-text-fill-color: currentColor;
+  font: inherit;
+  text-align: center;
+  outline: none;
+  caret-color: var(--cell-text);
+}
+
+.play-page .cell input.note-input {
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: transparent;
+}
+
+.play-page .cell.note-mode,
+.play-page .cell.note-mode:hover,
+.play-page .cell.note-mode.related,
+.play-page .cell.note-mode.selected {
+  background: var(--cell-note);
+}
+
+.note-grid {
+  position: absolute;
+  inset: 2px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  pointer-events: none;
+}
+
+.note-grid span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(7px, calc(100cqi / 48), 12px);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cell-text);
+}

@@ -81,6 +81,7 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
   hr: number = 0;
 
   checkButtonDisable: boolean= false;
+  readonly noteDigits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
   constructor(private shareService: ShareService, public roomService: RoomService) {
     this.mazeList = [];
@@ -118,6 +119,48 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
       return '';
     }
     return String(value);
+  }
+
+  hasNote(cell: MazeSquare, digit: number): boolean {
+    return !!cell.notes?.[digit - 1];
+  }
+
+  noteLabel(cell: MazeSquare, row: number, col: number): string {
+    const place = 'Row ' + (row + 1) + ', column ' + (col + 1);
+    if (!cell.isNote) {
+      return place;
+    }
+    const marks = this.noteDigits.filter(digit => this.hasNote(cell, digit));
+    if (!marks.length) {
+      return place + ', note mode, empty';
+    }
+    return place + ', notes ' + marks.join(' ');
+  }
+
+  onCellDoubleClick(event: MouseEvent, row: number, col: number): void {
+    event.preventDefault();
+    const cell = this.mazeList[row][col];
+    if (cell.isDisable || cell.isClue) {
+      return;
+    }
+    if (!cell.isNote) {
+      const current = this.displayValue(cell);
+      cell.isNote = true;
+      cell.isWrong = false;
+      cell.value = '';
+      if (/^[1-9]$/.test(current)) {
+        cell.notes[Number(current) - 1] = true;
+      }
+      const input = event.target as HTMLInputElement;
+      if (input && input.value !== undefined) {
+        input.value = '';
+      }
+      return;
+    }
+    if (cell.notes.some(marked => marked)) {
+      return;
+    }
+    cell.isNote = false;
   }
 
   isRelated(row: number, col: number): boolean {
@@ -213,6 +256,20 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
   }
 
   private commitCell(input: HTMLInputElement, row: number, col: number, value: string): void {
+    const cell = this.mazeList[row][col];
+    if (cell.isNote) {
+      if (value === '') {
+        cell.notes = Array.from({ length: 9 }, () => false);
+      } else if (/^[1-9]$/.test(value)) {
+        const index = Number(value) - 1;
+        cell.notes[index] = !cell.notes[index];
+        cell.notes = cell.notes.slice();
+      }
+      if (input) {
+        input.value = '';
+      }
+      return;
+    }
     if (this.outOfLives && value !== '') {
       if (input) {
         input.value = this.displayValue(this.mazeList[row][col]);
@@ -613,6 +670,7 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
     for (let i = 0; i < 9; i++) {
       for (let j = 0; j < 9; j++) {
         this.mazeList[i][j].isWrong = false;
+        this.mazeList[i][j].clearNotes();
         if (this.chuot_bach_array[i][j] == 0) {
           this.mazeList[i][j].value = '';
           this.mazeList[i][j].isDisable = false;
@@ -861,6 +919,7 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
         this.mazeList[i][j].isDisable = true;
         this.mazeList[i][j].isClue = false;
         this.mazeList[i][j].isWrong = false;
+        this.mazeList[i][j].clearNotes();
       }
     }
 
@@ -884,6 +943,7 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
     for (let i = 0; i < 9; i++) {
       for (let j = 0; j< 9;j++) {
         this.mazeList[i][j].isWrong = false;
+        this.mazeList[i][j].clearNotes();
         if (this.chuot_bach_array[i][j] == 0) {
           this.mazeList[i][j].value = "";
           this.mazeList[i][j].isDisable = false;
@@ -911,24 +971,28 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
   //Checking isValid?
   checkSolution() {
     let goodMaze: boolean = true;
+    let hasNotes = false;
 
     for (let i=0;i<9;i++) {
       for (let j=0;j<9;j++) {
-        if (this.mazeList[i][j].value == "") {
-          this.mazeList[i][j].value = 0;
+        const cell = this.mazeList[i][j];
+        if (cell.isNote) {
+          hasNotes = true;
+        }
+        if (cell.isNote || cell.value === '' || cell.value == null || cell.value === 0) {
+          goodMaze = false;
+          continue;
         }
 
         for(let c1 = 0; c1 < 9; c1++) {
-          if(c1 != j && this.mazeList[i][j].value == this.mazeList[i][c1].value) {
-            // console.log("Pair ("+i+","+j+")="+this.mazeList[i][j]+"and " + "pair ("+i+","+c1+") = " + this.mazeList[i][c1]);
+          if(c1 != j && cell.value == this.mazeList[i][c1].value && !this.mazeList[i][c1].isNote) {
             goodMaze = false;
             break;
           }
         }
 
         for(let r1 = 0; r1 < 9; r1++) {
-            if(r1 != i && this.mazeList[i][j].value == this.mazeList[r1][j].value) {
-              // console.log("Pair ("+i+","+j+")="+this.mazeList[i][j]+"and " + "pair ("+r1+","+j+") = " + this.mazeList[r1][j]);
+            if(r1 != i && cell.value == this.mazeList[r1][j].value && !this.mazeList[r1][j].isNote) {
               goodMaze = false;
               break;
             }
@@ -938,17 +1002,12 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
         let start_c = j - j%3;
         for(let r1 = 0; r1 < 3; r1++){
             for(let c1 = 0; c1 < 3; c1++){
-                if(i != (r1+start_r) && j != (c1+start_c) && this.mazeList[i][j].value  == this.mazeList[r1+start_r][c1+start_c].value) {
-                  // console.log("Pair ("+i+","+j+")="+this.mazeList[i][j]+"and " + "pair ("+(r1+start_r)+","+(c1+start_c)+") = " + this.mazeList[r1+start_r][c1+start_c]);
+                const other = this.mazeList[r1+start_r][c1+start_c];
+                if(i != (r1+start_r) && j != (c1+start_c) && cell.value == other.value && !other.isNote) {
                   goodMaze = false;
                   break;
                 }
             }
-        }
-
-        if (this.mazeList[i][j].value == 0) {
-          this.mazeList[i][j].value = "";
-          this.mazeList[i][j].isDisable = false;
         }
       }
     }
@@ -958,7 +1017,9 @@ export class PlayMazeComponent implements OnInit, OnDestroy {
 
       Swal.fire({
         icon: 'error',
-        title: 'Please try again, I believe you can do it <span>&#9996;</span>',
+        title: hasNotes
+          ? 'Note cells are still empty. Erase the notes, double-click the cell, then enter the number.'
+          : 'Please try again, I believe you can do it <span>&#9996;</span>',
         showConfirmButton: true,
         timer: 2506,
         allowOutsideClick: true,

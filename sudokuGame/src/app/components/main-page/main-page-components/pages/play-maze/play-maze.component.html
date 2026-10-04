@@ -276,7 +276,7 @@
         <span>Generating a Maze <strong>(For Test)</strong></span>
       </button> -->
 
-      <button mat-raised-button color="primary" (click)="nextMaze()" class="solveButton" *ngIf="isHost()">
+      <button mat-raised-button color="primary" (click)="nextMaze()" class="solveButton" *ngIf="currentRoom" [disabled]="!isHost()" [attr.aria-label]="isHost() ? 'Next maze' : 'Next maze. Waiting for the host.'">
         <span>Next maze</span>
       </button>
 
